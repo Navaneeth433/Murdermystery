@@ -88,7 +88,7 @@ def index():
             ).label("total_score"),
         )
         .outerjoin(Attempt)
-        .group_by(User.id)
+        .group_by(User.id, User.name, User.email)
         .order_by(db.desc("total_score"))
         .limit(100)
         .all()

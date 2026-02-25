@@ -83,8 +83,8 @@ def dashboard():
             total_score_label,
         )
         .outerjoin(Attempt, Attempt.user_id == User.id)
-        .group_by(User.id)
-        .order_by(total_score_label.desc())
+        .group_by(User.id, User.name, User.email)
+        .order_by(db.desc("total_score"))
         .all()
     )
 
