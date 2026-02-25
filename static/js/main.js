@@ -72,9 +72,11 @@ window.ChallengeHost = (function () {
     if (btnCompleted) {
       btnCompleted.addEventListener("click", () => {
         const puzzleUrl = btnCompleted.getAttribute("data-puzzle-url");
+        const quizUrl = btnCompleted.getAttribute("data-quiz-url");
         if (puzzleUrl) {
-          // Chapter 2: go to the matching puzzle instead of submitting directly
           window.location.href = puzzleUrl;
+        } else if (quizUrl) {
+          window.location.href = quizUrl;
         } else {
           submit(true);
         }

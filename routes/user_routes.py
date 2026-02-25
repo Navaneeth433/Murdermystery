@@ -307,6 +307,33 @@ def puzzle(content_id):
 
 
 
+@user_bp.route("/quiz/<int:content_id>")
+def quiz(content_id):
+    """3-question interrogation quiz — shown at the end of chapter 4."""
+    if "user_id" not in session:
+        return redirect(url_for("user.register"))
+
+    user_id = session["user_id"]
+    content = Content.query.get_or_404(content_id)
+
+    if not can_access_content(user_id, content_id):
+        return "Locked", 403
+
+    # Ensure an Attempt row exists so /submit can finalise it
+    existing = Attempt.query.filter_by(
+        user_id=user_id, content_id=content_id
+    ).first()
+    if not existing:
+        attempt = Attempt(
+            user_id=user_id,
+            content_id=content_id,
+            start_time=datetime.utcnow(),
+        )
+        db.session.add(attempt)
+        db.session.commit()
+
+    return render_template("quiz.html", content=content)
+
 
 @user_bp.route("/api/me")
 def api_me():

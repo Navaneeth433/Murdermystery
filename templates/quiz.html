@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Interrogation — Chapter {{ content.chapter_number }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .qz-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.75rem;
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .qz-heading {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 3.5vw, 1.7rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #fff;
+    text-shadow: 0 0 14px rgba(180, 0, 0, 0.55);
+    text-align: center;
+    margin: 0;
+  }
+
+  .qz-sub {
+    font-size: 0.84rem;
+    color: var(--text-muted);
+    text-align: center;
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* ── Form card ── */
+  .qz-card {
+    width: 100%;
+    max-width: 560px;
+    background: rgba(8, 0, 0, 0.85);
+    border: 1px solid var(--border-blood);
+    border-radius: 6px;
+    padding: 2rem 2.25rem;
+    box-shadow: 0 0 40px rgba(140, 0, 0, 0.2);
+  }
+
+  .qz-field {
+    margin-bottom: 1.4rem;
+  }
+
+  .qz-label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent-red);
+    margin-bottom: 0.45rem;
+  }
+
+  .qz-input {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(180, 0, 0, 0.3);
+    border-radius: 4px;
+    padding: 0.65rem 0.9rem;
+    color: #e0e0e0;
+    font-size: 1rem;
+    font-family: var(--font-body);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+
+  .qz-input:focus {
+    border-color: var(--accent-red);
+    box-shadow: 0 0 10px rgba(180, 0, 0, 0.35);
+  }
+
+  .qz-input.error {
+    border-color: #ff4444;
+  }
+
+  .qz-input.correct {
+    border-color: #335533;
+  }
+
+  .qz-error-msg {
+    display: none;
+    font-size: 0.8rem;
+    color: #ff5555;
+    margin-top: 0.9rem;
+    text-align: center;
+    letter-spacing: 0.06em;
+    font-style: italic;
+  }
+
+  .qz-submit-btn {
+    width: 100%;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #fff;
+    background: transparent;
+    border: 1px solid var(--border-blood);
+    border-radius: 4px;
+    padding: 0.8rem;
+    cursor: pointer;
+    transition: background 0.25s, box-shadow 0.25s;
+    margin-top: 0.25rem;
+  }
+
+  .qz-submit-btn:hover {
+    background: var(--accent-red);
+    box-shadow: 0 0 16px var(--glow-red);
+  }
+
+  .qz-submit-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  /* ── Reveal ── */
+  .qz-reveal {
+    display: none;
+    max-width: 560px;
+    width: 100%;
+    text-align: center;
+    animation: qz-fade 1s ease forwards;
+  }
+
+  @keyframes qz-fade {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .qz-success-msg {
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 1.25rem;
+  }
+
+  .qz-proceed-btn {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fff;
+    background: transparent;
+    border: 1px solid var(--border-blood);
+    border-radius: 4px;
+    padding: 0.75rem 2.5rem;
+    cursor: pointer;
+    transition: background 0.25s, box-shadow 0.25s;
+  }
+
+  .qz-proceed-btn:hover {
+    background: var(--accent-red);
+    box-shadow: 0 0 18px var(--glow-red);
+  }
+
+  @media (max-width: 540px) {
+    .qz-card {
+      padding: 1.5rem 1.25rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qz-page">
+
+  <h1 class="qz-heading">Subject Interrogation</h1>
+  <p class="qz-sub">Answer each question correctly to proceed. The evidence doesn't lie.</p>
+
+  <div class="qz-card">
+    <div class="qz-field">
+      <label class="qz-label" for="q1">Her Name?</label>
+      <input class="qz-input" id="q1" type="text" autocomplete="off" autocorrect="off" spellcheck="false"
+        placeholder="Enter name…" />
+    </div>
+    <div class="qz-field">
+      <label class="qz-label" for="q2">Hometown?</label>
+      <input class="qz-input" id="q2" type="text" autocomplete="off" autocorrect="off" spellcheck="false"
+        placeholder="Enter hometown…" />
+    </div>
+    <div class="qz-field" style="margin-bottom:0.5rem;">
+      <label class="qz-label" for="q3">Field of Degree?</label>
+      <input class="qz-input" id="q3" type="text" autocomplete="off" autocorrect="off" spellcheck="false"
+        placeholder="Enter field…" />
+    </div>
+
+    <p class="qz-error-msg" id="qz-error">
+      ✘ &nbsp; One or more answers are incorrect. Re-examine the evidence.
+    </p>
+
+    <button class="qz-submit-btn" id="qz-submit">Submit Findings</button>
+  </div>
+
+  <div class="qz-reveal" id="qz-reveal">
+    <p class="qz-success-msg">✔ &nbsp; All findings verified. Case record updated.</p>
+    <button class="qz-proceed-btn" id="btn-proceed">→ CLOSE THE FILE</button>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    "use strict";
+
+    var CONTENT_ID = {{ content.id | int
+  }};
+
+  /* Correct answers — case-insensitive, trimmed */
+  var ANSWERS = ["tracy", "mayberry", "cryptanalysis"];
+
+  var inputs = [
+    document.getElementById("q1"),
+    document.getElementById("q2"),
+    document.getElementById("q3")
+  ];
+  var errorEl = document.getElementById("qz-error");
+  var submitBtn = document.getElementById("qz-submit");
+  var revealEl = document.getElementById("qz-reveal");
+
+  /* Allow submitting with Enter key */
+  inputs.forEach(function (inp) {
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "Enter") submitBtn.click();
+    });
+  });
+
+  submitBtn.addEventListener("click", function () {
+    var allCorrect = true;
+
+    inputs.forEach(function (inp, i) {
+      var val = inp.value.trim().toLowerCase();
+      if (val === ANSWERS[i]) {
+        inp.classList.remove("error");
+        inp.classList.add("correct");
+      } else {
+        inp.classList.remove("correct");
+        inp.classList.add("error");
+        allCorrect = false;
+      }
+    });
+
+    if (!allCorrect) {
+      errorEl.style.display = "block";
+      return;
+    }
+
+    /* All correct — submit chapter and show reveal */
+    errorEl.style.display = "none";
+    submitBtn.disabled = true;
+
+    fetch("/submit/" + CONTENT_ID, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: true })
+    })
+      .then(function (r) { return r.json(); })
+      .catch(function () { return {}; })
+      .finally(function () {
+        revealEl.style.display = "block";
+      });
+  });
+
+  document.getElementById("btn-proceed").addEventListener("click", function () {
+    window.location.href = "/chapters";
+  });
+
+}) ();
+</script>
+{% endblock %}
