@@ -349,7 +349,8 @@
   {% if not is_preview %}
   <div class="cv-submit">
     <div id="submit-result" class="mb-3"></div>
-    <button id="btn-submit-completed" class="btn btn-completed  me-2">✔ Seal File (Completed)</button>
+    <button id="btn-submit-completed" class="btn btn-completed  me-2" disabled
+      title="Read all pages first to seal the file.">✔ Seal File (Completed)</button>
     <button id="btn-submit-incomplete" class="btn btn-incomplete">✘ Abandon File (Incomplete)</button>
   </div>
   {% endif %}
@@ -376,6 +377,8 @@
     var ZOOM_STEP = 0.25;
     var ZOOM_MIN = 0.5;
     var ZOOM_MAX = 3.0;
+    // true once the user has visited the last panel
+    var reachedLastPage = (totalPages <= 1);
 
     /* ── Element refs ── */
     var btnPrev = document.getElementById("cv-prev");
@@ -441,6 +444,14 @@
       // Update button states
       btnPrev.disabled = (curPage === 0);
       btnNext.disabled = (curPage === totalPages - 1);
+
+      // Unlock "Seal File" only after the last panel has been seen
+      if (curPage === totalPages - 1) reachedLastPage = true;
+      var btnSeal = document.getElementById("btn-submit-completed");
+      if (btnSeal) {
+        btnSeal.disabled = !reachedLastPage;
+        btnSeal.title = reachedLastPage ? "" : "Read all pages first to seal the file.";
+      }
 
       // Reset internal scroll position, then bring nav buttons into view
       var viewport = document.getElementById("cv-viewport");
