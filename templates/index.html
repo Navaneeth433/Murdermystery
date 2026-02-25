@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}The Case — Challenge Host{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+  <header class="dashboard-header">
+    <h1 class="dashboard-title">Unsolved Case Files</h1>
+    <p class="dashboard-subtitle">The investigation is ongoing. Read the records thoroughly.</p>
+  </header>
+
+  <div class="chapter-cards" id="chapter-cards">
+    {% for c in contents %}
+
+    {# Determine locked state: placeholder OR real but not accessible #}
+    {% set is_locked = (not c.accessible) %}
+    {% set is_placeholder = c.is_placeholder if c.is_placeholder is defined else False %}
+
+    <article class="chapter-card
+             {% if c.chapter_number >= 7 %}chapter-revealed{% endif %}
+             {% if is_locked %}chapter-locked{% endif %}
+             {% if is_placeholder %}chapter-placeholder{% endif %}" data-chapter="{{ c.chapter_number }}">
+
+      <div class="chapter-card-inner">
+
+        {# Chapter label #}
+        <span class="chapter-number">
+          {% if is_locked %}🔒{% endif %}
+          Chapter {{ c.chapter_number }}
+        </span>
+
+        {# Title: show real title or a classified placeholder #}
+        <h2 class="chapter-title">
+          {% if is_placeholder %}
+          <span class="placeholder-title">— Classified —</span>
+          {% else %}
+          {{ c.title }}
+          {% endif %}
+        </h2>
+
+        {# Action: Enter button, locked hint, or placeholder hint #}
+        {% if not is_locked and not is_placeholder %}
+        <button type="button" class="btn btn-chapter btn-start-challenge" data-content-id="{{ c.id }}">
+          Enter
+        </button>
+        {% elif is_placeholder %}
+        <p class="chapter-lock-msg">
+          {% if c.chapter_number <= 1 %} Not yet available {% else %} Complete Chapter {{ c.chapter_number - 1 }} to
+            unlock {% endif %} </p>
+            {% else %}
+            {# Real chapter in DB but user hasn't completed the previous one #}
+            <p class="chapter-lock-msg">
+              Complete Chapter {{ c.chapter_number - 1 }} to unlock
+            </p>
+            {% endif %}
+
+      </div>
+
+      {% if c.chapter_number >= 7 %}
+      <p class="chapter-reveal-caption">The case was never closed.</p>
+      {% endif %}
+
+    </article>
+
+    {% else %}
+    <p class="no-chapters">No chapters available yet.</p>
+    {% endfor %}
+  </div>
+
+  {% if chapters_revealed %}
+  <div class="revealed-badge" id="revealed-badge" aria-hidden="true">8 chapters</div>
+  {% endif %}
+
+  <aside class="leaderboard-section">
+    <h2 class="leaderboard-title">Leaderboard</h2>
+    <div class="leaderboard-table-wrap">
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in leaderboard %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ row.name }}</td>
+            <td>{{ "%.2f"|format(row.total_score) }}</td>
+          </tr>
+          {% else %}
+          <tr>
+            <td colspan="3" class="text-muted">No attempts yet.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </aside>
+</div>
+
+{# Narrative reveal modal: shown once when landing with ?revealed=1 #}
+<div id="reveal-modal" class="reveal-modal" role="dialog" aria-modal="true" aria-label="Story reveal" hidden>
+  <div class="reveal-modal-backdrop"></div>
+  <div class="reveal-modal-content">
+    <p class="reveal-modal-text">You thought the story ended.</p>
+    <p class="reveal-modal-text">It didn't.</p>
+    <button type="button" class="btn btn-reveal-dismiss" id="reveal-dismiss">Continue</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    window.ChallengeHost && window.ChallengeHost.attachIndexHandlers();
+
+    var url = new URL(window.location.href);
+    if (url.searchParams.get("revealed") === "1") {
+      url.searchParams.delete("revealed");
+      if (history.replaceState) history.replaceState({}, "", url.pathname + url.search);
+      var modal = document.getElementById("reveal-modal");
+      var dismiss = document.getElementById("reveal-dismiss");
+      if (modal) {
+        modal.hidden = false;
+        document.body.classList.add("reveal-modal-open");
+      }
+      if (dismiss) {
+        dismiss.addEventListener("click", function () {
+          modal.hidden = true;
+          document.body.classList.remove("reveal-modal-open");
+          var cards = document.querySelectorAll(".chapter-revealed");
+          cards.forEach(function (el) { el.classList.add("animate-reveal"); });
+        });
+      }
+    } else {
+      var cards = document.querySelectorAll(".chapter-revealed");
+      cards.forEach(function (el) { el.classList.add("animate-reveal"); });
+    }
+  });
+</script>
+{% endblock %}

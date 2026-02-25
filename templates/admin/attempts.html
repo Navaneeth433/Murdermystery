@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Attempts - Challenge Host{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Attempts</h2>
+    <a href="{{ url_for('admin.dashboard') }}" class="btn btn-sm btn-outline-secondary">Back to Dashboard</a>
+  </div>
+
+  <table class="table table-striped table-sm">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>User</th>
+        <th>Email</th>
+        <th>Content</th>
+        <th>Started</th>
+        <th>Ended</th>
+        <th>Time Taken (s)</th>
+        <th>Completed</th>
+        <th>Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for attempt, user, content in attempts %}
+        <tr>
+          <td>{{ attempt.id }}</td>
+          <td>{{ user.name }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ content.title }}</td>
+          <td>{{ attempt.start_time or '' }}</td>
+          <td>{{ attempt.end_time or '' }}</td>
+          <td>{{ attempt.time_taken if attempt.time_taken is not none else '' }}</td>
+          <td>{{ 'Yes' if attempt.completed else 'No' }}</td>
+          <td>{{ "%.2f"|format(attempt.score) if attempt.score is not none else '' }}</td>
+        </tr>
+      {% else %}
+        <tr>
+          <td colspan="9" class="text-muted">No attempts yet.</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}
+
+
+

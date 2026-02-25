@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}Create Content - Challenge Host{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <h2>Create New Content</h2>
+    {% if error %}
+    <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    <form method="post">
+      <div class="mb-3">
+        <label for="title" class="form-label">Title</label>
+        <input type="text" class="form-control" id="title" name="title" required value="{{ title or '' }}" />
+      </div>
+      <div class="mb-3">
+        <label for="time_limit" class="form-label">Time Limit (seconds)</label>
+        <input type="number" min="1" class="form-control" id="time_limit" name="time_limit" required
+          value="{{ time_limit or '' }}" />
+      </div>
+      <div class="mb-3">
+        <label for="chapter_number" class="form-label">Chapter number (1–8)</label>
+        <input type="number" min="1" max="8" class="form-control" id="chapter_number" name="chapter_number"
+          value="{{ chapter_number or '1' }}" />
+      </div>
+      <div class="mb-3">
+        <label for="unlock_time" class="form-label">Unlock time (optional, ISO datetime)</label>
+        <input type="text" class="form-control" id="unlock_time" name="unlock_time"
+          placeholder="e.g. 2025-01-15T00:00:00" value="{{ unlock_time or '' }}" />
+      </div>
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="is_unlocked" name="is_unlocked" {% if
+          request.form.is_unlocked %}checked{% endif %} />
+        <label class="form-check-label" for="is_unlocked">Unlocked (for ch 1–6 time-based)</label>
+      </div>
+      <div class="form-check mb-3">
+        <input class="form-check-input" type="checkbox" id="requires_previous_completion"
+          name="requires_previous_completion" {% if request.form.requires_previous_completion %}checked{% endif %} />
+        <label class="form-check-label" for="requires_previous_completion">Requires Ch.6 completion (use for Ch
+          7–8)</label>
+      </div>
+      <div class="mb-3">
+        <label for="panels_json" class="form-label">Comic Panel URLs</label>
+        <div class="form-text text-muted mb-2" style="font-size: 0.85rem;">Paste Cloudinary or other image URLs here,
+          separated by newlines or commas.</div>
+        <textarea class="form-control font-monospace" id="panels_json" name="panels_json" rows="4"
+          placeholder="https://res.cloudinary.com/.../image1.png&#10;https://res.cloudinary.com/.../image2.png">{{ panels_json or '' }}</textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Create</button>
+      <a href="{{ url_for('admin.dashboard') }}" class="btn btn-secondary ms-2">Cancel</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

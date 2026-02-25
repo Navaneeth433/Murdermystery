@@ -1,0 +1,526 @@
+{% extends "base.html" %}
+
+{% block title %}Chapter {{ content.chapter_number }} – {{ content.title }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* ── Paginated Comic Viewer ── */
+
+  /* Viewer shell */
+  .cv-shell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+    padding: 0 0 2rem;
+  }
+
+  /* Header bar */
+  .cv-header {
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
+    padding: 1.5rem 1rem 1rem;
+  }
+
+  .cv-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    font-weight: 600;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-shadow: 0 0 10px rgba(168, 0, 0, 0.4);
+    margin-bottom: 0.3rem;
+  }
+
+  .cv-meta {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Alerts */
+  .cv-alert {
+    width: 100%;
+    max-width: 900px;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .cv-alert-info {
+    background: rgba(33, 150, 243, 0.1);
+    color: #90caf9;
+    border: 1px solid #2196f3;
+  }
+
+  .cv-alert-viewed {
+    background: var(--accent-red-dim);
+    border: 1px solid var(--border-blood);
+    color: var(--text-dim);
+  }
+
+  /* ── Viewport: shows one panel at a time ── */
+  .cv-viewport {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    background: #000;
+    border: 1px solid var(--border-subtle);
+    border-radius: 6px;
+    overflow: hidden;
+    /* maintain reasonable aspect ratio on desktop, auto on mobile */
+    min-height: 40vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: pan-y pinch-zoom;
+  }
+
+  .cv-panel {
+    display: none;
+    width: 100%;
+  }
+
+  .cv-panel.active {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cv-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 75vh;
+    object-fit: contain;
+    transform-origin: center center;
+    transition: transform 0.2s ease;
+    user-select: none;
+    -webkit-user-drag: none;
+    touch-action: manipulation;
+  }
+
+  /* ── Toolbar: zoom + page counter ── */
+  .cv-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 900px;
+    padding: 0.6rem 0.75rem;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-subtle);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    gap: 0.5rem;
+  }
+
+  .cv-zoom-group {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .cv-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+    /* touch target */
+    padding: 0 0.5rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    color: var(--text-dim);
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  .cv-btn:active,
+  .cv-btn:hover {
+    background: var(--accent-red);
+    border-color: var(--accent-red);
+    color: #fff;
+  }
+
+  .cv-btn:disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  .cv-zoom-label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    min-width: 3ch;
+    text-align: center;
+  }
+
+  .cv-page-counter {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  /* ── Navigation row ── */
+  .cv-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: 900px;
+    padding: 0.75rem 0;
+    gap: 1rem;
+  }
+
+  .cv-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 48px;
+    /* WCAG touch target */
+    padding: 0.6rem 1.5rem;
+    font-family: var(--font-display);
+    font-size: clamp(0.9rem, 3vw, 1.1rem);
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    background: var(--bg-card);
+    border: 1px solid var(--border-blood);
+    border-radius: 4px;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.25s, box-shadow 0.25s, color 0.25s;
+    user-select: none;
+  }
+
+  .cv-nav-btn:hover,
+  .cv-nav-btn:active {
+    background: var(--accent-red);
+    border-color: var(--accent-red);
+    color: #fff;
+    box-shadow: 0 0 16px var(--glow-red);
+  }
+
+  .cv-nav-btn:disabled {
+    opacity: 0.3;
+    pointer-events: none;
+  }
+
+  /* Progress bar */
+  .cv-progress-wrap {
+    flex: 1;
+    height: 4px;
+    background: var(--border-subtle);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .cv-progress-bar {
+    height: 100%;
+    background: var(--accent-red);
+    transition: width 0.3s ease;
+    border-radius: 2px;
+  }
+
+  /* ── Submit section ── */
+  .cv-submit {
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 1rem;
+  }
+
+  /* ── Mobile tweaks ── */
+  @media (max-width: 600px) {
+    .cv-img {
+      max-height: 60vh;
+    }
+
+    .cv-nav-btn {
+      padding: 0.6rem 1rem;
+    }
+
+    .cv-toolbar {
+      padding: 0.5rem 0.5rem;
+    }
+  }
+
+  @media (max-width: 380px) {
+    .cv-nav-btn {
+      font-size: 0.82rem;
+      padding: 0.55rem 0.75rem;
+    }
+
+    .cv-btn {
+      min-width: 36px;
+      min-height: 36px;
+      font-size: 1rem;
+    }
+  }
+
+  /* Landscape phones */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .cv-img {
+      max-height: 55vh;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cv-img {
+      transition: none;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cv-shell" id="cv-shell">
+
+  {# ── Header ── #}
+  <div class="cv-header">
+    <h1 class="cv-title">{{ content.title }}</h1>
+    <p class="cv-meta">Examine each piece of evidence carefully.</p>
+  </div>
+
+  {# ── Alerts ── #}
+  {% if is_preview %}
+  <div class="cv-alert cv-alert-info">
+    <strong>Admin Preview Mode</strong> — Attempt logging disabled.
+  </div>
+  {% endif %}
+
+
+  {% if panels %}
+
+  {# ── Viewport: one panel at a time ── #}
+  <div class="cv-viewport" id="cv-viewport" role="region" aria-label="Evidence viewer">
+    {% for panel_img in panels %}
+    <div class="cv-panel {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}" role="img"
+      aria-label="Evidence photo {{ loop.index }} of {{ panels|length }}">
+      <img class="cv-img" id="cv-img-{{ loop.index0 }}" src="{{ panel_img }}" alt="Evidence photo {{ loop.index }}"
+        loading="{% if loop.first %}eager{% else %}lazy{% endif %}" draggable="false" />
+    </div>
+    {% endfor %}
+  </div>
+
+  {# ── Toolbar: zoom + counter ── #}
+  <div class="cv-toolbar">
+    <div class="cv-zoom-group">
+      <button class="cv-btn" id="cv-zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
+      <span class="cv-zoom-label" id="cv-zoom-label">100%</span>
+      <button class="cv-btn" id="cv-zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
+      <button class="cv-btn" id="cv-zoom-reset" title="Reset zoom" aria-label="Reset zoom"
+        style="font-size:0.75rem;min-width:44px;">Reset</button>
+    </div>
+
+    <span class="cv-page-counter" id="cv-page-counter" aria-live="polite">
+      Page 1 / {{ panels|length }}
+    </span>
+  </div>
+
+  {# ── Navigation row ── #}
+  <div class="cv-nav">
+    <button class="cv-nav-btn" id="cv-prev" aria-label="Previous page" disabled>← Prev</button>
+    <div class="cv-progress-wrap" role="progressbar" aria-valuenow="1" aria-valuemin="1"
+      aria-valuemax="{{ panels|length }}" id="cv-progress-wrap">
+      <div class="cv-progress-bar" id="cv-progress-bar"
+        style="width: {% if panels|length > 1 %}{{ (1 / panels|length * 100)|round }}%{% else %}100%{% endif %}"></div>
+    </div>
+    <button class="cv-nav-btn" id="cv-next" aria-label="Next page" {% if panels|length <=1 %}disabled{% endif %}>Next
+      →</button>
+  </div>
+
+  {% else %}
+  <p style="color: var(--text-muted); margin: 2rem 0;">No evidence photos available for this chapter.</p>
+  {% endif %}
+
+  {# ── Hidden content container (timer / submit machinery) ── #}
+  <div id="content-container" data-content-id="{{ content.id }}" data-time-limit="{{ content.time_limit }}"
+    data-chapter="{{ content.chapter_number }}" style="display:none;">
+  </div>
+
+  {# ── Submit area ── #}
+  {% if not is_preview %}
+  <div class="cv-submit">
+    <div id="submit-result" class="mb-3"></div>
+    <button id="btn-submit-completed" class="btn btn-completed  me-2">✔ Seal File (Completed)</button>
+    <button id="btn-submit-incomplete" class="btn btn-incomplete">✘ Abandon File (Incomplete)</button>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  window.CONTENT_ID = {{ content.id }};
+  window.CONTENT_CHAPTER = {{ content.chapter_number }};
+  window.CONTENT_PANELS = {{ panels | tojson }};
+</script>
+
+<script>
+  (function () {
+    "use strict";
+
+    /* ── State ── */
+    var panels = document.querySelectorAll(".cv-panel");
+    var totalPages = panels.length;
+    var curPage = 0;           // 0-based index
+    var zoomLevel = 1.0;
+    var ZOOM_STEP = 0.25;
+    var ZOOM_MIN = 0.5;
+    var ZOOM_MAX = 3.0;
+
+    /* ── Element refs ── */
+    var btnPrev = document.getElementById("cv-prev");
+    var btnNext = document.getElementById("cv-next");
+    var counter = document.getElementById("cv-page-counter");
+    var progressBar = document.getElementById("cv-progress-bar");
+    var progressWrap = document.getElementById("cv-progress-wrap");
+    var btnZoomIn = document.getElementById("cv-zoom-in");
+    var btnZoomOut = document.getElementById("cv-zoom-out");
+    var btnZoomReset = document.getElementById("cv-zoom-reset");
+    var zoomLabel = document.getElementById("cv-zoom-label");
+
+    if (!panels.length) return;   // no panels, nothing to do
+
+    /* ── Helpers ── */
+    function currentImg() {
+      return panels[curPage] ? panels[curPage].querySelector(".cv-img") : null;
+    }
+
+    function applyZoom(img) {
+      if (!img) return;
+      img.style.transform = "scale(" + zoomLevel + ")";
+      zoomLabel.textContent = Math.round(zoomLevel * 100) + "%";
+    }
+
+    function resetZoom() {
+      zoomLevel = 1.0;
+      applyZoom(currentImg());
+    }
+
+    /* ── Navigate ── */
+    function goTo(idx) {
+      if (idx < 0 || idx >= totalPages) return;
+
+      // Reset zoom when flipping page
+      zoomLevel = 1.0;
+      if (zoomLabel) zoomLabel.textContent = "100%";
+
+      // Hide current
+      panels[curPage].classList.remove("active");
+      var oldImg = panels[curPage].querySelector(".cv-img");
+      if (oldImg) oldImg.style.transform = "scale(1)";
+
+      curPage = idx;
+
+      // Show new
+      panels[curPage].classList.add("active");
+
+      // Update counter
+      counter.textContent = "Page " + (curPage + 1) + " / " + totalPages;
+
+      // Update progress bar
+      var pct = ((curPage + 1) / totalPages) * 100;
+      progressBar.style.width = pct + "%";
+      if (progressWrap) {
+        progressWrap.setAttribute("aria-valuenow", curPage + 1);
+      }
+
+      // Update button states
+      btnPrev.disabled = (curPage === 0);
+      btnNext.disabled = (curPage === totalPages - 1);
+
+      // Scroll viewport back to top on mobile
+      var viewport = document.getElementById("cv-viewport");
+      if (viewport) viewport.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    /* ── Button listeners ── */
+    if (btnPrev) btnPrev.addEventListener("click", function () { goTo(curPage - 1); });
+    if (btnNext) btnNext.addEventListener("click", function () { goTo(curPage + 1); });
+
+    if (btnZoomIn) btnZoomIn.addEventListener("click", function () {
+      zoomLevel = Math.min(ZOOM_MAX, +(zoomLevel + ZOOM_STEP).toFixed(2));
+      applyZoom(currentImg());
+    });
+    if (btnZoomOut) btnZoomOut.addEventListener("click", function () {
+      zoomLevel = Math.max(ZOOM_MIN, +(zoomLevel - ZOOM_STEP).toFixed(2));
+      applyZoom(currentImg());
+    });
+    if (btnZoomReset) btnZoomReset.addEventListener("click", resetZoom);
+
+    /* ── Keyboard navigation ── */
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") goTo(curPage + 1);
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") goTo(curPage - 1);
+      if (e.key === "+" || e.key === "=") {
+        zoomLevel = Math.min(ZOOM_MAX, +(zoomLevel + ZOOM_STEP).toFixed(2));
+        applyZoom(currentImg());
+      }
+      if (e.key === "-") {
+        zoomLevel = Math.max(ZOOM_MIN, +(zoomLevel - ZOOM_STEP).toFixed(2));
+        applyZoom(currentImg());
+      }
+      if (e.key === "0") resetZoom();
+    });
+
+    /* ── Touch swipe (mobile) ── */
+    (function () {
+      var viewport = document.getElementById("cv-viewport");
+      if (!viewport) return;
+      var startX = 0, startY = 0;
+
+      viewport.addEventListener("touchstart", function (e) {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      }, { passive: true });
+
+      viewport.addEventListener("touchend", function (e) {
+        var dx = e.changedTouches[0].clientX - startX;
+        var dy = e.changedTouches[0].clientY - startY;
+        // Only treat as horizontal swipe if mostly horizontal
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+          if (dx < 0) goTo(curPage + 1);   // swipe left  → next
+          else goTo(curPage - 1);   // swipe right → prev
+        }
+      }, { passive: true });
+    })();
+
+    /* ── Initial state ── */
+    goTo(0);
+
+  })();
+</script>
+
+<script>
+  // Load optional per-chapter JS (timer etc) and submit handlers
+  document.addEventListener("DOMContentLoaded", function () {
+    var container = document.getElementById("content-container");
+    var contentId = container && container.getAttribute("data-content-id");
+    if (contentId) {
+      var script = document.createElement("script");
+      script.src = "{{ url_for('static', filename='contents') }}/content_" + contentId + ".js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+    window.ChallengeHost && window.ChallengeHost.attachContentHandlers();
+  });
+</script>
+{% endblock %}

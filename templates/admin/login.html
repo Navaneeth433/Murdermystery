@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Login - Challenge Host{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5 col-xl-4">
+    <div class="chapter-card mt-5">
+      <div class="chapter-card-inner">
+        <h2 class="dashboard-title fs-3 mb-2 text-center"
+          style="animation: none; text-shadow: none; color: var(--accent-red);">Restricted Terminal</h2>
+        <p class="chapter-meta text-center mb-4">
+          Enter administrator credentials to access the master dossier controls. Unauthorized access will be logged.
+        </p>
+        {% if error %}
+        <div class="alert alert-danger"
+          style="background: rgba(168,0,0,0.1); border-color: var(--accent-red); color: #ffcccc;">{{ error }}</div>
+        {% endif %}
+        <form method="post">
+          <div class="mb-3">
+            <label for="username" class="form-label"
+              style="color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.85rem;">Access
+              Code</label>
+            <input type="text" class="form-control" id="username" name="username" required
+              style="background: var(--bg-dark); border: 1px solid var(--border-subtle); color: var(--text-primary);" />
+          </div>
+          <div class="mb-4">
+            <label for="password" class="form-label"
+              style="color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.85rem;">Passphrase</label>
+            <input type="password" class="form-control" id="password" name="password" required
+              style="background: var(--bg-dark); border: 1px solid var(--border-subtle); color: var(--text-primary);" />
+          </div>
+          <div class="d-grid">
+            <button type="submit" class="btn btn-chapter w-100">Grant Access</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

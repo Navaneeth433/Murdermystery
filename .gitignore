@@ -1,0 +1,14 @@
+# Python venv
+venv/
+
+# Python caches
+__pycache__/
+*.pyc
+
+# Local DB
+database.db
+
+# Editor / tooling
+.vscode/
+.idea/
+.cursor/

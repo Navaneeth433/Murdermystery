@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Challenge Host{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2>Admin Dashboard</h2>
+  <div>
+    <a href="{{ url_for('admin.create_content') }}" class="btn btn-sm btn-primary me-2">Create Content</a>
+    <a href="{{ url_for('admin.attempts') }}" class="btn btn-sm btn-outline-secondary me-2">View Attempts</a>
+    <a href="{{ url_for('admin.logout') }}" class="btn btn-sm btn-danger">Logout</a>
+  </div>
+</div>
+
+<h4>Contents</h4>
+<table class="table table-striped align-middle mb-4">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Ch</th>
+      <th>Title</th>
+      <th>Time limit (s)</th>
+      <th>Status</th>
+      <th>Toggle</th>
+      <th>Preview</th>
+      <th>Delete</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in contents %}
+    <tr>
+      <td>{{ c.id }}</td>
+      <td>{{ c.chapter_number }}</td>
+      <td>{{ c.title }}</td>
+      <td>{{ c.time_limit }}</td>
+      <td>
+        {% if c.is_unlocked %}
+        <span class="badge bg-success">Unlocked</span>
+        {% else %}
+        <span class="badge bg-secondary">Locked</span>
+        {% endif %}
+      </td>
+      <td>
+        <form method="post" action="{{ url_for('admin.toggle_content', content_id=c.id) }}">
+          <button type="submit" class="btn btn-sm btn-outline-primary">
+            {% if c.is_unlocked %}Lock{% else %}Unlock{% endif %}
+          </button>
+        </form>
+      </td>
+      <td>
+        <a href="{{ url_for('user.content_page', content_id=c.id, preview=1) }}" class="btn btn-sm btn-info text-white"
+          target="_blank">View</a>
+      </td>
+      <td>
+        <form method="post" action="{{ url_for('admin.delete_content', content_id=c.id) }}"
+          onsubmit="return confirm('Are you sure you want to delete this chapter? This cannot be undone.');">
+          <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="6" class="text-muted">No contents yet.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h4>Leaderboard (All Users)</h4>
+<table class="table table-sm table-hover">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Total Score</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in leaderboard %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td>{{ row.name }}</td>
+      <td>{{ row.email }}</td>
+      <td>{{ "%.2f"|format(row.total_score) }}</td>
+    </tr>
+    {% else %}
+    <tr>
+      <td colspan="4" class="text-muted">No attempts yet.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

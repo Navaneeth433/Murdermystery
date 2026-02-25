@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Challenge Host{% endblock %}
+
+{% block content %}
+<div class="row pt-5">
+  <div class="col-md-6 offset-md-3">
+    <div class="card bg-dark text-white border-subtle" style="box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+      <div class="card-header border-blood text-center py-4">
+        <h2 class="mb-0"
+          style="font-family: var(--font-display); font-size: 2.25rem; letter-spacing: 0.05em; text-transform: uppercase;">
+          Provide Credentials</h2>
+        <p class="text-muted small mt-2 mb-0 font-monospace">Authorization required to access the dossier.</p>
+      </div>
+      <div class="card-body p-4">
+
+        {% if error %}
+        <div class="alert alert-danger"
+          style="background: var(--accent-red-dim); border-color: var(--border-blood); color: #fff;">
+          [SYSTEM ERROR] {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="post" action="{{ url_for('user.login') }}">
+          <div class="mb-4">
+            <label for="email" class="form-label font-monospace"
+              style="color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.85rem;">Registered
+              Email / Key</label>
+            <input type="email" class="form-control text-white" id="email" name="email" required
+              value="{{ email or '' }}" style="background-color: #0a0a0a; border: 1px solid var(--border-subtle);" />
+          </div>
+          <div class="d-grid mt-4">
+            <button type="submit" class="btn btn-chapter">Authorize Access</button>
+          </div>
+        </form>
+
+        <div class="text-center mt-4 pt-3" style="border-top: 1px solid var(--border-subtle);">
+          <p class="small text-muted mb-0">No matching records found?</p>
+          <a href="{{ url_for('user.register') }}" class="small" style="color: var(--accent-red);">Generate New
+            Identity</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

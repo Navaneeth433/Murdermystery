@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Classified Dossier — Enter the Case</title>
+  <meta name="description" content="The case was never closed. Enter the Classified Dossier." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Source+Sans+3:wght@400;500;600&display=swap"
+    rel="stylesheet" />
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --accent-red: #a80000;
+      --glow-red: rgba(168, 0, 0, 0.55);
+      --font-display: "Crimson Text", "Georgia", serif;
+      --font-body: "Source Sans 3", "Segoe UI", sans-serif;
+    }
+
+    /* iOS Safari: 100vh overflows past the address bar */
+    html {
+      height: -webkit-fill-available;
+    }
+
+    body {
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      /* dynamic viewport — modern browsers */
+      overflow: hidden;
+      background: #000;
+      -webkit-text-size-adjust: 100%;
+      /* no font inflation on rotation */
+      text-size-adjust: 100%;
+    }
+
+    /* ── Full-screen video ── */
+    .hs-video {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      z-index: 0;
+      filter: brightness(0.55) saturate(0.8);
+    }
+
+    /* ── Layered overlays ── */
+    .hs-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse at center, transparent 30%, rgba(0, 0, 0, 0.82) 100%),
+        linear-gradient(180deg, rgba(5, 0, 0, 0.35) 0%, rgba(0, 0, 0, 0.6) 100%);
+    }
+
+    /* film-grain noise */
+    .hs-noise {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%" height="100%" filter="url(%23n)" opacity="0.045"/></svg>');
+      pointer-events: none;
+    }
+
+    /* ── Centre stage ── */
+    .hs-stage {
+      position: relative;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      /* safe-area padding: notch / punch-hole / home-bar */
+      padding-top: calc(env(safe-area-inset-top, 0px) + 1.5rem);
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1.5rem);
+      padding-left: calc(env(safe-area-inset-left, 0px) + 1.25rem);
+      padding-right: calc(env(safe-area-inset-right, 0px) + 1.25rem);
+      text-align: center;
+    }
+
+    /* ── Decorative rule ── */
+    .hs-rule {
+      width: 100px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent-red), transparent);
+      margin-bottom: 1.4rem;
+      animation: hs-fade-in 2s ease 0.4s both;
+    }
+
+    /* ── Title ── */
+    .hs-title {
+      font-family: var(--font-display);
+      /* fluid: 2.2 rem on tiny phones → 6.5 rem on desktop */
+      font-size: clamp(2.2rem, 10vw, 6.5rem);
+      font-weight: 600;
+      color: #f0e8e8;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-shadow:
+        0 0 12px rgba(168, 0, 0, 0.6),
+        0 2px 6px #000,
+        2px 2px 0 rgba(0, 0, 0, 0.5);
+      line-height: 1.05;
+      word-break: break-word;
+      hyphens: auto;
+      animation: hs-flicker 5s infinite alternate, hs-fade-in 1.4s ease both;
+    }
+
+    .hs-subtitle {
+      font-family: var(--font-display);
+      font-size: clamp(0.9rem, 3.5vw, 1.4rem);
+      font-style: italic;
+      color: rgba(200, 180, 178, 0.75);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      margin-top: 0.5rem;
+      margin-bottom: 2.5rem;
+      animation: hs-fade-in 2s ease 0.8s both;
+    }
+
+    /* ── Start Game button ── */
+    .hs-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      /* WCAG 2.5.5 minimum touch target */
+      padding: 0.85rem 2.5rem;
+      font-family: var(--font-display);
+      font-size: clamp(1rem, 4vw, 1.3rem);
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      text-decoration: none;
+      color: #f0e8e8;
+      background: transparent;
+      border: 2px solid var(--accent-red);
+      border-radius: 2px;
+      position: relative;
+      overflow: hidden;
+      touch-action: manipulation;
+      /* no double-tap zoom on iOS */
+      -webkit-tap-highlight-color: transparent;
+      transition: box-shadow 0.3s;
+      animation: hs-fade-in 2s ease 1.2s both;
+    }
+
+    /* Sweep-fill on hover — only for pointer/mouse devices */
+    @media (hover: hover) and (pointer: fine) {
+      .hs-btn::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: var(--accent-red);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: -1;
+      }
+
+      .hs-btn:hover::before {
+        transform: scaleX(1);
+      }
+
+      .hs-btn:hover {
+        box-shadow: 0 0 22px var(--glow-red), 0 0 6px var(--glow-red) inset;
+        animation: hs-fade-in 0s, hs-pulse-red 1.6s infinite;
+      }
+    }
+
+    /* Touch press feedback */
+    .hs-btn:active {
+      background: var(--accent-red);
+      box-shadow: 0 0 18px var(--glow-red);
+      transform: scale(0.97);
+      transition: transform 0.08s, background 0.08s;
+    }
+
+    /* ── Tagline ── */
+    .hs-tagline {
+      margin-top: 1.25rem;
+      font-family: var(--font-body);
+      font-size: clamp(0.68rem, 2.5vw, 0.78rem);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(150, 130, 128, 0.6);
+      animation: hs-fade-in 2.5s ease 1.6s both;
+    }
+
+    /* ══ Keyframes ══ */
+    @keyframes hs-fade-in {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes hs-flicker {
+
+      0%,
+      19.999%,
+      22%,
+      62.999%,
+      64%,
+      64.999%,
+      70%,
+      100% {
+        opacity: 1;
+        text-shadow: 0 0 12px rgba(168, 0, 0, 0.6), 0 2px 6px #000;
+      }
+
+      20%,
+      21.999%,
+      63%,
+      63.999%,
+      65%,
+      69.999% {
+        opacity: 0.45;
+        text-shadow: none;
+      }
+    }
+
+    @keyframes hs-pulse-red {
+      0% {
+        box-shadow: 0 0 0 0 rgba(168, 0, 0, 0.7);
+      }
+
+      70% {
+        box-shadow: 0 0 0 12px rgba(168, 0, 0, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(168, 0, 0, 0);
+      }
+    }
+
+    /* ══════════════════════════════════════
+       RESPONSIVE BREAKPOINTS
+    ══════════════════════════════════════ */
+
+    /* Very small phones ≤ 375 px (iPhone SE, Galaxy A series) */
+    @media (max-width: 375px) {
+      .hs-rule {
+        width: 70px;
+        margin-bottom: 1rem;
+      }
+
+      .hs-title {
+        font-size: 2rem;
+        letter-spacing: 0.04em;
+      }
+
+      .hs-subtitle {
+        font-size: 0.82rem;
+        letter-spacing: 0.1em;
+        margin-bottom: 1.8rem;
+      }
+
+      .hs-btn {
+        padding: 0.75rem 1.8rem;
+        font-size: 0.95rem;
+      }
+    }
+
+    /* Landscape phones — short viewport */
+    @media (max-height: 500px) and (orientation: landscape) {
+      .hs-rule {
+        width: 60px;
+        margin-bottom: 0.5rem;
+      }
+
+      .hs-title {
+        font-size: clamp(1.5rem, 5.5vh, 2.4rem);
+      }
+
+      .hs-subtitle {
+        font-size: 0.78rem;
+        margin-top: 0.25rem;
+        margin-bottom: 1rem;
+      }
+
+      .hs-btn {
+        padding: 0.55rem 2rem;
+        min-height: 42px;
+        font-size: 0.92rem;
+      }
+
+      .hs-tagline {
+        margin-top: 0.6rem;
+        font-size: 0.65rem;
+      }
+    }
+
+    /* Tablets 768 px+ and larger phones in landscape */
+    @media (min-width: 768px) {
+      .hs-title {
+        font-size: clamp(3.5rem, 7vw, 6.5rem);
+      }
+
+      .hs-subtitle {
+        font-size: clamp(1rem, 2vw, 1.4rem);
+        letter-spacing: 0.22em;
+      }
+
+      .hs-btn {
+        padding: 1rem 3rem;
+      }
+    }
+
+    /* ══ Accessibility ══ */
+
+    /* Honour "reduce motion" system setting */
+    @media (prefers-reduced-motion: reduce) {
+
+      .hs-title,
+      .hs-subtitle,
+      .hs-rule,
+      .hs-btn,
+      .hs-tagline {
+        animation: none !important;
+        opacity: 1;
+        transform: none;
+      }
+    }
+
+    /* Save-data: skip heavy noise SVG */
+    @media (prefers-reduced-data: reduce) {
+      .hs-noise {
+        display: none;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Background video — playsinline keeps it inline on iOS (not fullscreen) -->
+  <video class="hs-video" autoplay muted loop playsinline preload="metadata">
+    <source src="{{ url_for('static', filename='bg_video.mp4') }}" type="video/mp4" />
+    <source src="{{ url_for('static', filename='bg_video.webm') }}" type="video/webm" />
+  </video>
+
+  <!-- Darkening overlays -->
+  <div class="hs-overlay" aria-hidden="true"></div>
+  <div class="hs-noise" aria-hidden="true"></div>
+
+  <!-- Main content -->
+  <main class="hs-stage">
+    <div class="hs-rule" aria-hidden="true"></div>
+
+    <h1 class="hs-title">Classified Dossier</h1>
+    <p class="hs-subtitle">The case was never closed.</p>
+
+    <a href="{{ url_for('user.index') }}" class="hs-btn" id="start-game-btn">
+      Start&nbsp;Game
+    </a>
+
+    <p class="hs-tagline">Do you dare open the file?</p>
+  </main>
+
+</body>
+
+</html>
