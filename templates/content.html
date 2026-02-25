@@ -276,6 +276,60 @@
       max-height: 50vh;
     }
   }
+
+  /* ── Last-page hint banner ── */
+  .cv-hint-banner {
+    display: none;
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 0.76rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent-red);
+    border-top: 1px solid rgba(180, 0, 0, 0.25);
+    border-bottom: 1px solid rgba(180, 0, 0, 0.25);
+    padding: 0.55rem 1rem;
+    margin: 0.75rem auto 0;
+    max-width: 900px;
+    width: 100%;
+    animation: hint-slide 0.7s ease forwards;
+  }
+
+  .cv-hint-icon {
+    opacity: 0.45;
+    font-size: 0.55rem;
+    vertical-align: middle;
+    margin: 0 0.5rem;
+  }
+
+  @keyframes hint-slide {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Pulse glow on seal button when first unlocked */
+  @keyframes seal-pulse {
+
+    0%,
+    100% {
+      box-shadow: none;
+    }
+
+    50% {
+      box-shadow: 0 0 22px rgba(180, 0, 0, 0.75);
+    }
+  }
+
+  .btn-completed.seal-ready {
+    animation: seal-pulse 1.2s ease 3;
+  }
 </style>
 {% endblock %}
 
@@ -340,10 +394,24 @@
   <p style="color: var(--text-muted); margin: 2rem 0;">No evidence photos available for this chapter.</p>
   {% endif %}
 
-  {# ── Hidden content container (timer / submit machinery) ── #}
+  {# ── Hidden content container ── #}
   <div id="content-container" data-content-id="{{ content.id }}" data-chapter="{{ content.chapter_number }}"
     style="display:none;">
   </div>
+
+  {# ── Last-page contextual hint ── #}
+  {% if not is_preview %}
+  <div id="cv-hint-banner" style="display:none;" class="cv-hint-banner">
+    <span class="cv-hint-icon">&#9632;</span>
+    ALL EVIDENCE EXAMINED &mdash;
+    {% if content.chapter_number == 2 %}
+    Proceed to the Evidence Analysis to close this chapter.
+    {% else %}
+    Press <strong>SEAL FILE</strong> below to close this chapter.
+    {% endif %}
+    <span class="cv-hint-icon">&#9632;</span>
+  </div>
+  {% endif %}
 
   {# ── Submit area ── #}
   {% if not is_preview %}
@@ -453,6 +521,19 @@
       if (btnSeal) {
         btnSeal.disabled = !reachedLastPage;
         btnSeal.title = reachedLastPage ? "" : "Read all pages first to seal the file.";
+      }
+
+      // Show the hint banner and pulse the button on first unlocking
+      if (curPage === totalPages - 1) {
+        var hintBanner = document.getElementById("cv-hint-banner");
+        if (hintBanner && hintBanner.style.display === "none") {
+          hintBanner.style.display = "block";
+        }
+        if (btnSeal && !btnSeal.classList.contains("seal-ready")) {
+          btnSeal.classList.add("seal-ready");
+          // Remove animation class after it finishes so it doesn't replay on re-visit
+          setTimeout(function () { btnSeal.classList.remove("seal-ready"); }, 3700);
+        }
       }
 
       // Reset internal scroll position, then bring nav buttons into view
