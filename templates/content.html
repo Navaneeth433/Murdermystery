@@ -311,6 +311,43 @@
   .btn-completed.seal-ready {
     animation: seal-pulse 1.2s ease 3;
   }
+
+  /* ── Video player ── */
+  .cv-video-wrap {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .cv-video {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--border-blood);
+    border-radius: 6px;
+    background: #000;
+    display: block;
+  }
+
+  .cv-video-hint {
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.7;
+    text-align: center;
+    font-style: italic;
+    margin: 0;
+    transition: color 0.5s;
+  }
+
+  .cv-video-hint.done {
+    color: var(--accent-red);
+    opacity: 1;
+    font-style: normal;
+  }
 </style>
 {% endblock %}
 
@@ -320,7 +357,8 @@
   {# ── Header ── #}
   <div class="cv-header">
     <h1 class="cv-title">{{ content.title }}</h1>
-    <p class="cv-meta">Examine each piece of evidence carefully.</p>
+    <p class="cv-meta">{% if is_video %}Watch the full recording to seal this case file.{% else %}Examine each piece of
+      evidence carefully.{% endif %}</p>
   </div>
 
   {# ── Alerts ── #}
@@ -331,7 +369,28 @@
   {% endif %}
 
 
-  {% if panels %}
+  {# ─────────────────────────── VIDEO MODE ─────────────────────────── #}
+  {% if is_video %}
+
+  <div class="cv-video-wrap" id="cv-video-wrap">
+    {% if video_type == "direct" %}
+    <video id="cv-video-el" class="cv-video" controls controlsList="nodownload" preload="metadata" playsinline>
+      <source src="{{ video_url }}" />
+      Your browser does not support the video tag.
+    </video>
+    {% else %}
+    <iframe id="cv-video-iframe" class="cv-video" src="{{ video_url }}" allow="autoplay; fullscreen; picture-in-picture"
+      allowfullscreen frameborder="0" title="Chapter {{ content.chapter_number }} Video">
+    </iframe>
+    {% endif %}
+    <p class="cv-video-hint" id="cv-video-hint">
+      ▶ Watch the full recording to seal this case file.
+    </p>
+  </div>
+
+  {% endif %}
+  {# ──────────────────────────── PANELS MODE ──────────────────────────── #}
+  {% if panels and not is_video %}
 
   {# ── Viewport ── #}
   <div class="cv-viewport" id="cv-viewport" role="region" aria-label="Evidence viewer">
@@ -415,6 +474,80 @@
   window.CONTENT_CHAPTER = {{ content.chapter_number }};
   window.CONTENT_PANELS = {{ panels | tojson }};
 </script>
+
+{% if is_video %}
+<script>
+  (function () {
+    "use strict";
+
+    var VIDEO_TYPE = {{ video_type | tojson
+  }};
+
+  function unlockSealFile() {
+    var hint = document.getElementById("cv-video-hint");
+    if (hint) {
+      hint.textContent = "\u2714 Recording complete \u2014 you may now seal the case file.";
+      hint.classList.add("done");
+    }
+    var btnSeal = document.getElementById("btn-submit-completed");
+    if (btnSeal) {
+      btnSeal.disabled = false;
+      btnSeal.title = "";
+      if (!btnSeal.classList.contains("seal-ready")) {
+        btnSeal.classList.add("seal-ready");
+        setTimeout(function () { btnSeal.classList.remove("seal-ready"); }, 3700);
+      }
+    }
+    var hintBanner = document.getElementById("cv-hint-banner");
+    if (hintBanner) hintBanner.style.display = "block";
+  }
+
+  /* ── Direct video (HTML5) ── */
+  var videoEl = document.getElementById("cv-video-el");
+  if (videoEl) {
+    videoEl.addEventListener("ended", unlockSealFile);
+  }
+
+  /* ── YouTube IFrame API ── */
+  if (VIDEO_TYPE === "youtube") {
+    window.onYouTubeIframeAPIReady = function () {
+      var iframe = document.getElementById("cv-video-iframe");
+      if (!iframe) return;
+      var player = new YT.Player(iframe, {
+        events: {
+          onStateChange: function (e) {
+            if (e.data === YT.PlayerState.ENDED) unlockSealFile();
+          }
+        }
+      });
+    };
+    /* Load the YouTube IFrame API script */
+    var tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.head.appendChild(tag);
+  }
+
+  /* ── Vimeo (postMessage) ── */
+  if (VIDEO_TYPE === "vimeo") {
+    var iframe = document.getElementById("cv-video-iframe");
+    if (iframe) {
+      /* Tell the player we want finish events */
+      iframe.addEventListener("load", function () {
+        iframe.contentWindow.postMessage(
+          JSON.stringify({ method: "addEventListener", value: "finish" }), "*"
+        );
+      });
+      window.addEventListener("message", function (e) {
+        try {
+          var data = JSON.parse(e.data);
+          if (data.event === "finish") unlockSealFile();
+        } catch (_) { }
+      });
+    }
+  }
+}) ();
+</script>
+{% endif %}
 
 <script>
   (function () {

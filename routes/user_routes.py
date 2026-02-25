@@ -267,12 +267,49 @@ def content_page(content_id):
         except Exception:
             panels = []
 
+    # ── Video detection ──────────────────────────────────────────────────────
+    # If the chapter has exactly one "panel" that is a video URL, switch to
+    # video-player mode instead of the image carousel.
+    VIDEO_EXTS   = (".mp4", ".webm", ".ogg", ".mov")
+    VIDEO_HOSTS  = ("youtube.com/watch", "youtu.be/", "vimeo.com/", "cloudinary.com")
+
+    is_video   = False
+    video_url  = None
+    video_type = None   # "youtube" | "vimeo" | "direct"
+
+    if len(panels) == 1:
+        raw = panels[0].strip()
+        if any(raw.lower().endswith(ext) for ext in VIDEO_EXTS) or \
+           any(vh in raw for vh in VIDEO_HOSTS):
+            is_video = True
+            # Convert YouTube watch → embed
+            if "youtube.com/watch" in raw:
+                import re as _re
+                m = _re.search(r"[?&]v=([^&]+)", raw)
+                vid = m.group(1) if m else ""
+                video_url  = f"https://www.youtube.com/embed/{vid}?enablejsapi=1&rel=0"
+                video_type = "youtube"
+            elif "youtu.be/" in raw:
+                vid = raw.split("youtu.be/")[-1].split("?")[0]
+                video_url  = f"https://www.youtube.com/embed/{vid}?enablejsapi=1&rel=0"
+                video_type = "youtube"
+            elif "vimeo.com/" in raw:
+                vid = raw.rstrip("/").split("/")[-1]
+                video_url  = f"https://player.vimeo.com/video/{vid}?api=1"
+                video_type = "vimeo"
+            else:
+                video_url  = raw
+                video_type = "direct"
+
     return render_template(
         "content.html",
         content=content,
         attempted=attempted,
         panels=panels,
         is_preview=(is_preview and is_admin),
+        is_video=is_video,
+        video_url=video_url,
+        video_type=video_type,
     )
 
 
