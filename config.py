@@ -17,6 +17,12 @@ class Config:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Reconnect automatically if Neon (or any provider) drops the SSL connection
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,   # test connection before use; reconnects if stale
+        "pool_recycle": 300,     # recycle connections every 5 minutes
+    }
+
     # Server config — DEBUG off by default in production
     HOST  = os.environ.get("FLASK_RUN_HOST", "0.0.0.0")
     PORT  = int(os.environ.get("FLASK_RUN_PORT", "5000"))

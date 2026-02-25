@@ -13,6 +13,7 @@ def create_app() -> Flask:
     app.config["SECRET_KEY"] = config.SECRET_KEY
     app.config["SQLALCHEMY_DATABASE_URI"] = config.SQLALCHEMY_DATABASE_URI
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = config.SQLALCHEMY_ENGINE_OPTIONS
 
     db.init_app(app)
     Migrate(app, db)
