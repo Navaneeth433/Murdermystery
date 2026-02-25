@@ -17,6 +17,10 @@ def create_app() -> Flask:
     db.init_app(app)
     Migrate(app, db)
 
+    # ✅ Always ensure tables exist (safe no-op if they already do)
+    with app.app_context():
+        db.create_all()
+
     # ✅ Register blueprints ONLY
     app.register_blueprint(user_bp)
     app.register_blueprint(admin_bp)
