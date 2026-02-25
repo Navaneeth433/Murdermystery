@@ -68,13 +68,13 @@
     position: relative;
     width: 100%;
     max-width: 900px;
-    height: 72vh;
     background: #000;
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
     overflow: hidden;
-    touch-action: none;
-    /* we handle all gestures ourselves */
+    /* touch-action set dynamically by JS:
+       pan-y at scale=1 (allows page scroll), none when zoomed */
+    touch-action: pan-y;
     cursor: default;
     user-select: none;
     -webkit-user-select: none;
@@ -82,19 +82,16 @@
 
   .cv-panel {
     display: none;
-    position: absolute;
-    inset: 0;
+    width: 100%;
   }
 
   .cv-panel.active {
     display: block;
   }
 
-  /* transform canvas: translate+scale applied here by JS */
+  /* Canvas: normal flow so the image height determines viewport height */
   .cv-canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
+    display: block;
     width: 100%;
     transform-origin: 0 0;
     will-change: transform;
@@ -106,7 +103,6 @@
     height: auto;
     -webkit-user-drag: none;
     pointer-events: none;
-    /* let viewport receive all pointer events */
   }
 
   /* ── Toolbar ── */
@@ -586,17 +582,19 @@
       if (c) c.style.transform = "translate(" + panX.toFixed(1) + "px," + panY.toFixed(1) + "px) scale(" + scale + ")";
       if (zoomLabel) zoomLabel.textContent = Math.round(scale * 100) + "%";
       viewport.style.cursor = (scale > 1) ? "grab" : "default";
+      /* Allow page scroll at scale=1; lock to JS handling when zoomed */
+      viewport.style.touchAction = scale > 1 ? "none" : "pan-y";
     }
 
     /* ── Clamp pan inside viewport ── */
     function clampPan() {
-      if (scale <= 1) { panX = 0; panY = 0; return; }
       var vw = viewport.offsetWidth;
       var vh = viewport.offsetHeight;
-      var c = currentCanvas();
-      var canvasH = c ? c.offsetHeight : vh;
+      /* viewport height = natural canvas height (normal-flow canvas).
+         Allow vertical pan even at scale=1 for tall images. */
       panX = Math.min(0, Math.max(vw - vw * scale, panX));
-      panY = Math.min(0, Math.max(vh - canvasH * scale, panY));
+      panY = Math.min(0, Math.max(vh - vh * scale, panY));
+      if (scale <= 1) panX = 0; /* image always fills width, so no horizontal pan */
     }
 
     /* ── Zoom at viewport-relative point (cx, cy) ── */
@@ -713,11 +711,13 @@
     }
 
     viewport.addEventListener("touchstart", function (e) {
-      e.preventDefault();
+      /* DO NOT call preventDefault here — that blocked all touch interactions.
+         We selectively prevent default in touchmove instead. */
       var rect = viewport.getBoundingClientRect();
       if (e.touches.length === 1) {
         touch = { type: "pan", x: e.touches[0].clientX, y: e.touches[0].clientY, px: panX, py: panY };
       } else if (e.touches.length === 2) {
+        e.preventDefault(); /* suppress browser pinch on the pinch START gesture */
         touch = {
           type: "pinch",
           dist: touchDist(e.touches),
@@ -728,8 +728,12 @@
     }, { passive: false });
 
     viewport.addEventListener("touchmove", function (e) {
-      e.preventDefault();
       if (!touch) return;
+      /* Prevent default ONLY for pinch (always) or single-finger pan while zoomed.
+         At scale=1 with one finger: let the page scroll naturally. */
+      if (e.touches.length >= 2 || (scale > 1 && e.touches.length === 1)) {
+        e.preventDefault();
+      }
       var rect = viewport.getBoundingClientRect();
       if (e.touches.length === 2 && touch.type === "pinch") {
         var d = touchDist(e.touches);
