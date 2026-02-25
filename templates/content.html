@@ -71,13 +71,12 @@
     background: #000;
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
-    overflow: hidden;
-    /* maintain reasonable aspect ratio on desktop, auto on mobile */
-    min-height: 40vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    touch-action: pan-y pinch-zoom;
+    /* overflow:auto lets zoomed image scroll/pan inside the box */
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    max-height: 75vh;
+    /* allow both directions so browser panning works when zoomed */
+    touch-action: pan-x pan-y;
   }
 
   .cv-panel {
@@ -93,15 +92,13 @@
 
   .cv-img {
     display: block;
+    /* width is driven by JS zoom (100% = fit, 200% = 2× wide + scrollable) */
     width: 100%;
     height: auto;
-    max-height: 75vh;
-    object-fit: contain;
-    transform-origin: center center;
-    transition: transform 0.2s ease;
     user-select: none;
     -webkit-user-drag: none;
-    touch-action: manipulation;
+    /* allow pan so user can scroll within viewport when zoomed */
+    touch-action: pan-x pan-y;
   }
 
   /* ── Toolbar: zoom + page counter ── */
@@ -247,8 +244,8 @@
 
   /* ── Mobile tweaks ── */
   @media (max-width: 600px) {
-    .cv-img {
-      max-height: 60vh;
+    .cv-viewport {
+      max-height: 55vh;
     }
 
     .cv-nav-btn {
@@ -275,14 +272,8 @@
 
   /* Landscape phones */
   @media (max-height: 500px) and (orientation: landscape) {
-    .cv-img {
-      max-height: 55vh;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cv-img {
-      transition: none;
+    .cv-viewport {
+      max-height: 50vh;
     }
   }
 </style>
@@ -406,13 +397,17 @@
 
     function applyZoom(img) {
       if (!img) return;
-      img.style.transform = "scale(" + zoomLevel + ")";
+      // Width-based zoom: 100% = fit viewport, 200% = twice as wide (scrollable)
+      img.style.width = Math.round(zoomLevel * 100) + "%";
       zoomLabel.textContent = Math.round(zoomLevel * 100) + "%";
     }
 
     function resetZoom() {
       zoomLevel = 1.0;
       applyZoom(currentImg());
+      // Scroll back to top-left after reset
+      var vp = document.getElementById("cv-viewport");
+      if (vp) { vp.scrollLeft = 0; vp.scrollTop = 0; }
     }
 
     /* ── Navigate ── */
@@ -423,10 +418,10 @@
       zoomLevel = 1.0;
       if (zoomLabel) zoomLabel.textContent = "100%";
 
-      // Hide current
+      // Hide current panel and reset its zoom width
       panels[curPage].classList.remove("active");
       var oldImg = panels[curPage].querySelector(".cv-img");
-      if (oldImg) oldImg.style.transform = "scale(1)";
+      if (oldImg) oldImg.style.width = "100%";
 
       curPage = idx;
 
@@ -447,9 +442,12 @@
       btnPrev.disabled = (curPage === 0);
       btnNext.disabled = (curPage === totalPages - 1);
 
-      // Scroll viewport back to top on mobile
+      // Reset internal scroll position, then bring nav buttons into view
       var viewport = document.getElementById("cv-viewport");
-      if (viewport) viewport.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      if (viewport) {
+        viewport.scrollLeft = 0;
+        viewport.scrollTop = 0;
+      }
     }
 
     /* ── Button listeners ── */
@@ -481,27 +479,9 @@
       if (e.key === "0") resetZoom();
     });
 
-    /* ── Touch swipe (mobile) ── */
-    (function () {
-      var viewport = document.getElementById("cv-viewport");
-      if (!viewport) return;
-      var startX = 0, startY = 0;
-
-      viewport.addEventListener("touchstart", function (e) {
-        startX = e.touches[0].clientX;
-        startY = e.touches[0].clientY;
-      }, { passive: true });
-
-      viewport.addEventListener("touchend", function (e) {
-        var dx = e.changedTouches[0].clientX - startX;
-        var dy = e.changedTouches[0].clientY - startY;
-        // Only treat as horizontal swipe if mostly horizontal
-        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
-          if (dx < 0) goTo(curPage + 1);   // swipe left  → next
-          else goTo(curPage - 1);   // swipe right → prev
-        }
-      }, { passive: true });
-    })();
+    /* ── Note: swipe-to-navigate removed. With overflow:auto + pan-x pan-y,     ──
+       browser native scrolling handles panning within a zoomed image correctly.  ──
+       Use the Prev / Next buttons or keyboard arrows to change panels.           ── */
 
     /* ── Initial state ── */
     goTo(0);
