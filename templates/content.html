@@ -350,7 +350,9 @@
   <div class="cv-submit">
     <div id="submit-result" class="mb-3"></div>
     <button id="btn-submit-completed" class="btn btn-completed  me-2" disabled
-      title="Read all pages first to seal the file.">✔ Seal File (Completed)</button>
+      title="Read all pages first to seal the file." {% if content.chapter_number==2
+      %}data-puzzle-url="{{ url_for('user.puzzle', content_id=content.id) }}" {% endif %}>✔ Seal File
+      (Completed)</button>
     <button id="btn-submit-incomplete" class="btn btn-incomplete">✘ Abandon File (Incomplete)</button>
   </div>
   {% endif %}

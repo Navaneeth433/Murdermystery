@@ -70,7 +70,15 @@ window.ChallengeHost = (function () {
     const btnCompleted = document.getElementById("btn-submit-completed");
     const btnIncomplete = document.getElementById("btn-submit-incomplete");
     if (btnCompleted) {
-      btnCompleted.addEventListener("click", () => submit(true));
+      btnCompleted.addEventListener("click", () => {
+        const puzzleUrl = btnCompleted.getAttribute("data-puzzle-url");
+        if (puzzleUrl) {
+          // Chapter 2: go to the matching puzzle instead of submitting directly
+          window.location.href = puzzleUrl;
+        } else {
+          submit(true);
+        }
+      });
     }
     if (btnIncomplete) {
       btnIncomplete.addEventListener("click", () => submit(false));

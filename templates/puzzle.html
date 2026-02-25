@@ -1,0 +1,565 @@
+{% extends "base.html" %}
+
+{% block title %}Evidence Analysis — Chapter {{ content.chapter_number }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  /* ── Puzzle page shell ── */
+  .pz-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.5rem 1rem 3rem;
+    width: 100%;
+  }
+
+  .pz-heading {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 3.5vw, 1.7rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #fff;
+    text-shadow: 0 0 14px rgba(180, 0, 0, 0.55);
+    text-align: center;
+    margin: 0;
+  }
+
+  .pz-instruction {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-align: center;
+    font-style: italic;
+    margin: 0;
+  }
+
+  /* ── Puzzle board ── */
+  .pz-board {
+    position: relative;
+    width: 100%;
+    max-width: 900px;
+    min-height: 420px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--border-blood);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    box-shadow: 0 0 40px rgba(150, 0, 0, 0.25);
+  }
+
+  /* Dark overlay so images stay readable over the bg */
+  .pz-board::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.52);
+    z-index: 0;
+  }
+
+  /* ── Columns ── */
+  .pz-col {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 10px;
+    flex: 0 0 auto;
+    width: 38%;
+  }
+
+  #col-right {
+    margin-left: auto;
+  }
+
+  /* ── Evidence image cards ── */
+  .pz-img {
+    width: clamp(90px, 14vw, 150px);
+    height: clamp(90px, 14vw, 150px);
+    object-fit: cover;
+    border: 2px solid rgba(180, 0, 0, 0.4);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    background: #111;
+    display: block;
+    -webkit-user-drag: none;
+    user-select: none;
+  }
+
+  .pz-img:hover {
+    border-color: #cc2222;
+    box-shadow: 0 0 12px rgba(200, 0, 0, 0.5);
+  }
+
+  .pz-img.selected {
+    border-color: #ff3333;
+    box-shadow: 0 0 20px rgba(255, 50, 50, 0.7);
+    transform: scale(1.06);
+  }
+
+  .pz-img.matched {
+    border-color: #aa0000;
+    box-shadow: 0 0 8px rgba(170, 0, 0, 0.4);
+    cursor: default;
+    opacity: 0.75;
+  }
+
+  @keyframes pz-shake {
+
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+
+    20% {
+      transform: translateX(-8px);
+    }
+
+    40% {
+      transform: translateX(8px);
+    }
+
+    60% {
+      transform: translateX(-6px);
+    }
+
+    80% {
+      transform: translateX(6px);
+    }
+  }
+
+  .pz-img.wrong {
+    border-color: #ff1111;
+    animation: pz-shake 0.55s ease;
+  }
+
+  /* ── SVG thread overlay ── */
+  #thread-svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 3;
+    overflow: visible;
+  }
+
+  /* ── Status bar ── */
+  .pz-status {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    min-height: 1.4em;
+    transition: color 0.3s;
+  }
+
+  .pz-status.error {
+    color: #ff5555;
+  }
+
+  /* ── Reveal section ── */
+  .pz-reveal {
+    display: none;
+    max-width: 680px;
+    width: 100%;
+    text-align: center;
+    animation: pz-fade-in 1.2s ease forwards;
+  }
+
+  @keyframes pz-fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .pz-reveal-card {
+    background: rgba(10, 0, 0, 0.88);
+    border: 1px solid var(--border-blood);
+    border-radius: 6px;
+    padding: 2rem 2.5rem;
+    box-shadow: 0 0 40px rgba(150, 0, 0, 0.35), inset 0 0 60px rgba(0, 0, 0, 0.5);
+    margin-bottom: 1.5rem;
+  }
+
+  .pz-reveal-line {
+    font-family: var(--font-display);
+    font-size: clamp(0.88rem, 2.2vw, 1.05rem);
+    color: #ccc;
+    line-height: 2;
+    margin: 0;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+
+  .pz-reveal-line.visible {
+    opacity: 1;
+  }
+
+  .pz-reveal-line.blank {
+    margin: 0.5rem 0;
+  }
+
+  .pz-reveal-line.emphasis {
+    color: #ff5555;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    font-size: clamp(0.92rem, 2.4vw, 1.1rem);
+  }
+
+  .pz-proceed-btn {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: clamp(0.9rem, 2.5vw, 1.05rem);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fff;
+    background: transparent;
+    border: 1px solid var(--border-blood);
+    border-radius: 4px;
+    padding: 0.75rem 2.5rem;
+    cursor: pointer;
+    transition: background 0.25s, box-shadow 0.25s;
+    opacity: 0;
+    transition: opacity 0.6s ease, background 0.25s, box-shadow 0.25s;
+  }
+
+  .pz-proceed-btn.visible {
+    opacity: 1;
+  }
+
+  .pz-proceed-btn:hover {
+    background: var(--accent-red);
+    box-shadow: 0 0 18px var(--glow-red);
+  }
+
+  /* ── Mobile ── */
+  @media (max-width: 540px) {
+    .pz-col {
+      width: 42%;
+      padding: 12px 6px;
+      gap: 8px;
+    }
+
+    .pz-reveal-card {
+      padding: 1.5rem 1.25rem;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="pz-page">
+
+  <h1 class="pz-heading">Cross-Reference Evidence</h1>
+  <p class="pz-instruction">Connect each clue on the left with its matching evidence on the right using the red thread.
+  </p>
+
+  <div class="pz-board" id="pz-board"
+    style="background-image: url('https://res.cloudinary.com/dwodihzmd/image/upload/v1772035839/Firefly_GeminiFlash_change_the_aspect_ratio_to_16-9_But_do_not_change_anything_else_684824_kod3an.png');">
+
+    <div class="pz-col" id="col-left"></div>
+
+    <!-- SVG canvas for red thread lines -->
+    <svg id="thread-svg" aria-hidden="true"></svg>
+
+    <div class="pz-col" id="col-right"></div>
+  </div>
+
+  <p class="pz-status" id="pz-status">Select a clue on the left to begin.</p>
+
+  <!-- Reveal section — shown only after all pairs matched -->
+  <div class="pz-reveal" id="pz-reveal">
+    <div class="pz-reveal-card">
+      <p class="pz-reveal-line" data-delay="0">A bruise that isn&rsquo;t trauma.</p>
+      <p class="pz-reveal-line" data-delay="1">A mark that isn&rsquo;t compression.</p>
+      <p class="pz-reveal-line" data-delay="2">Blood that isn&rsquo;t impact.</p>
+      <p class="pz-reveal-line" data-delay="3">Fibres that don&rsquo;t belong.</p>
+      <p class="pz-reveal-line blank" data-delay="4">&nbsp;</p>
+      <p class="pz-reveal-line emphasis" data-delay="5">Every resemblance collapses under scrutiny.</p>
+      <p class="pz-reveal-line blank" data-delay="6">&nbsp;</p>
+      <p class="pz-reveal-line" data-delay="7">This isn&rsquo;t coincidence.</p>
+      <p class="pz-reveal-line blank" data-delay="8">&nbsp;</p>
+      <p class="pz-reveal-line emphasis" data-delay="9">It&rsquo;s design.</p>
+      <p class="pz-reveal-line blank" data-delay="10">&nbsp;</p>
+      <p class="pz-reveal-line" data-delay="11">Someone is staging perception.</p>
+      <p class="pz-reveal-line blank" data-delay="12">&nbsp;</p>
+      <p class="pz-reveal-line" data-delay="13">We&rsquo;re not chasing a crime.</p>
+      <p class="pz-reveal-line blank" data-delay="14">&nbsp;</p>
+      <p class="pz-reveal-line emphasis" data-delay="15">We&rsquo;re chasing a mind.</p>
+    </div>
+    <button class="pz-proceed-btn" id="btn-proceed">→ CLOSE THE CASE FILE</button>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    "use strict";
+
+    var CONTENT_ID = {{ content.id }
+  };
+
+  /* ── Pair definitions (correct matches) ── */
+  var PAIRS = [
+    {
+      id: 1,
+      left: "https://res.cloudinary.com/dwodihzmd/image/upload/v1772031818/a1_clue_skjuhi.png",
+      right: "https://res.cloudinary.com/dwodihzmd/image/upload/v1772032617/b1_clue_vpavvz.png"
+    },
+    {
+      id: 2,
+      left: "https://res.cloudinary.com/dwodihzmd/image/upload/v1772031820/a2_clue_eljfg2.png",
+      right: "https://res.cloudinary.com/dwodihzmd/image/upload/v1772032620/b2_clue_tp8i3a.png"
+    },
+    {
+      id: 3,
+      left: "https://res.cloudinary.com/dwodihzmd/image/upload/v1772031822/a3_clue_vdovtg.png",
+      right: "https://res.cloudinary.com/dwodihzmd/image/upload/v1772032621/b3_clue_jishnc.png"
+    },
+    {
+      id: 4,
+      left: "https://res.cloudinary.com/dwodihzmd/image/upload/v1772031807/a4_hbazui.png",
+      right: "https://res.cloudinary.com/dwodihzmd/image/upload/v1772032617/b4_clue_ko2cay.png"
+    }
+  ];
+
+  /* ── Shuffle helper ── */
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  /* ── Build columns ── */
+  var leftOrder = shuffle(PAIRS);
+  var rightOrder = shuffle(PAIRS);
+
+  var colLeft = document.getElementById("col-left");
+  var colRight = document.getElementById("col-right");
+
+  leftOrder.forEach(function (pair) {
+    var img = document.createElement("img");
+    img.src = pair.left;
+    img.className = "pz-img pz-left";
+    img.dataset.pairId = pair.id;
+    img.alt = "Clue " + pair.id;
+    colLeft.appendChild(img);
+  });
+
+  rightOrder.forEach(function (pair) {
+    var img = document.createElement("img");
+    img.src = pair.right;
+    img.className = "pz-img pz-right";
+    img.dataset.pairId = pair.id;
+    img.alt = "Evidence " + pair.id;
+    colRight.appendChild(img);
+  });
+
+  /* ── SVG thread canvas ── */
+  var NS = "http://www.w3.org/2000/svg";
+  var svg = document.getElementById("thread-svg");
+
+  function makeLine(x1, y1, x2, y2, permanent) {
+    var line = document.createElementNS(NS, "line");
+    line.setAttribute("x1", x1); line.setAttribute("y1", y1);
+    line.setAttribute("x2", x2); line.setAttribute("y2", y2);
+    line.setAttribute("stroke", "#cc1111");
+    line.setAttribute("stroke-linecap", "round");
+    if (permanent) {
+      line.setAttribute("stroke-width", "3.5");
+      line.setAttribute("filter",
+        "drop-shadow(0 0 4px rgba(200,0,0,0.8))");
+    } else {
+      line.setAttribute("stroke-width", "2.5");
+      line.setAttribute("stroke-dasharray", "8 5");
+      line.setAttribute("opacity", "0.7");
+    }
+    return line;
+  }
+
+  /* Get center of an element relative to the puzzle board */
+  function center(el) {
+    var board = document.getElementById("pz-board");
+    var br = board.getBoundingClientRect();
+    var er = el.getBoundingClientRect();
+    return {
+      x: er.left + er.width / 2 - br.left,
+      y: er.top + er.height / 2 - br.top
+    };
+  }
+
+  /* ── Game state ── */
+  var selectedLeft = null;
+  var tempLine = null;
+  var matchedIds = {};
+  var matchCount = 0;
+  var statusEl = document.getElementById("pz-status");
+
+  function setStatus(msg, isError) {
+    statusEl.textContent = msg;
+    statusEl.classList.toggle("error", !!isError);
+  }
+
+  /* ── Left image click ── */
+  colLeft.addEventListener("click", function (e) {
+    var img = e.target.closest(".pz-img.pz-left");
+    if (!img || matchedIds[img.dataset.pairId]) return;
+
+    // Deselect previous
+    document.querySelectorAll(".pz-left.selected").forEach(function (el) {
+      el.classList.remove("selected");
+    });
+    if (tempLine) { svg.removeChild(tempLine); tempLine = null; }
+
+    selectedLeft = img;
+    img.classList.add("selected");
+    setStatus("Now select the matching evidence on the right.");
+  });
+
+  /* ── Right image click ── */
+  colRight.addEventListener("click", function (e) {
+    var img = e.target.closest(".pz-img.pz-right");
+    if (!img) return;
+    if (!selectedLeft) { setStatus("Select a clue on the left first.", true); return; }
+    if (matchedIds[img.dataset.pairId]) return;
+
+    if (img.dataset.pairId === selectedLeft.dataset.pairId) {
+      /* ✅ Correct match */
+      var lc = center(selectedLeft);
+      var rc = center(img);
+      svg.appendChild(makeLine(lc.x, lc.y, rc.x, rc.y, true));
+
+      matchedIds[img.dataset.pairId] = true;
+      selectedLeft.classList.remove("selected");
+      selectedLeft.classList.add("matched");
+      img.classList.add("matched");
+      selectedLeft = null;
+      if (tempLine) { svg.removeChild(tempLine); tempLine = null; }
+
+      matchCount++;
+      if (matchCount === PAIRS.length) {
+        setStatus("All evidence matched. Analysing findings…");
+        setTimeout(onAllMatched, 700);
+      } else {
+        setStatus("Correct. " + (PAIRS.length - matchCount) + " remaining.");
+      }
+
+    } else {
+      /* ❌ Wrong match */
+      img.classList.add("wrong");
+      if (selectedLeft) selectedLeft.classList.add("wrong");
+      setStatus("INCORRECT — that evidence does not match.", true);
+      var prevLeft = selectedLeft;
+      setTimeout(function () {
+        img.classList.remove("wrong");
+        if (prevLeft) {
+          prevLeft.classList.remove("wrong", "selected");
+        }
+        selectedLeft = null;
+        if (tempLine) { svg.removeChild(tempLine); tempLine = null; }
+        setStatus("Select a clue on the left to continue.", false);
+      }, 700);
+    }
+  });
+
+  /* ── Live dashed thread following pointer ── */
+  document.getElementById("pz-board").addEventListener("mousemove", function (e) {
+    if (!selectedLeft) return;
+    var board = document.getElementById("pz-board");
+    var br = board.getBoundingClientRect();
+    var lc = center(selectedLeft);
+    var x2 = e.clientX - br.left;
+    var y2 = e.clientY - br.top;
+
+    if (!tempLine) {
+      tempLine = makeLine(lc.x, lc.y, x2, y2, false);
+      svg.appendChild(tempLine);
+    } else {
+      tempLine.setAttribute("x1", lc.x); tempLine.setAttribute("y1", lc.y);
+      tempLine.setAttribute("x2", x2); tempLine.setAttribute("y2", y2);
+    }
+  });
+
+  /* ── Touch: live thread ── */
+  document.getElementById("pz-board").addEventListener("touchmove", function (e) {
+    if (!selectedLeft) return;
+    var touch = e.touches[0];
+    var board = document.getElementById("pz-board");
+    var br = board.getBoundingClientRect();
+    var lc = center(selectedLeft);
+    var x2 = touch.clientX - br.left;
+    var y2 = touch.clientY - br.top;
+
+    if (!tempLine) {
+      tempLine = makeLine(lc.x, lc.y, x2, y2, false);
+      svg.appendChild(tempLine);
+    } else {
+      tempLine.setAttribute("x1", lc.x); tempLine.setAttribute("y1", lc.y);
+      tempLine.setAttribute("x2", x2); tempLine.setAttribute("y2", y2);
+    }
+  }, { passive: true });
+
+  /* ── Completion ── */
+  function onAllMatched() {
+    /* Submit chapter as completed */
+    fetch("/submit/" + CONTENT_ID, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: true })
+    })
+      .then(function (r) { return r.json(); })
+      .catch(function () { return {}; })
+      .finally(function () {
+        showReveal();
+      });
+  }
+
+  function showReveal() {
+    var revealEl = document.getElementById("pz-reveal");
+    revealEl.style.display = "block";
+
+    /* Staggered line reveal */
+    var lines = revealEl.querySelectorAll(".pz-reveal-line");
+    lines.forEach(function (line) {
+      var delay = parseInt(line.dataset.delay || "0", 10);
+      setTimeout(function () {
+        line.classList.add("visible");
+      }, delay * 320);
+    });
+
+    /* Show proceed button after all lines */
+    var totalDelay = (lines.length) * 320 + 500;
+    setTimeout(function () {
+      var btn = document.getElementById("btn-proceed");
+      btn.classList.add("visible");
+      setStatus("The truth waits beyond.");
+    }, totalDelay);
+  }
+
+  /* ── Proceed button ── */
+  document.getElementById("btn-proceed").addEventListener("click", function () {
+    window.location.href = "/chapters";
+  });
+
+}) ();
+</script>
+{% endblock %}
