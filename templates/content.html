@@ -63,52 +63,60 @@
     color: var(--text-dim);
   }
 
-  /* ── Viewport: shows one panel at a time ── */
+  /* ── Viewport ── */
   .cv-viewport {
     position: relative;
     width: 100%;
     max-width: 900px;
+    height: 72vh;
     background: #000;
     border: 1px solid var(--border-subtle);
     border-radius: 6px;
-    /* overflow:auto lets zoomed image scroll/pan inside the box */
-    overflow: auto;
-    -webkit-overflow-scrolling: touch;
-    max-height: 75vh;
-    /* allow both directions so browser panning works when zoomed */
-    touch-action: pan-x pan-y;
+    overflow: hidden;
+    touch-action: none;
+    /* we handle all gestures ourselves */
+    cursor: default;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   .cv-panel {
     display: none;
-    width: 100%;
+    position: absolute;
+    inset: 0;
   }
 
   .cv-panel.active {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
+  }
+
+  /* transform canvas: translate+scale applied here by JS */
+  .cv-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    transform-origin: 0 0;
+    will-change: transform;
   }
 
   .cv-img {
     display: block;
-    /* width is driven by JS zoom (100% = fit, 200% = 2× wide + scrollable) */
     width: 100%;
     height: auto;
-    user-select: none;
     -webkit-user-drag: none;
-    /* allow pan so user can scroll within viewport when zoomed */
-    touch-action: pan-x pan-y;
+    pointer-events: none;
+    /* let viewport receive all pointer events */
   }
 
-  /* ── Toolbar: zoom + page counter ── */
+  /* ── Toolbar ── */
   .cv-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
     max-width: 900px;
-    padding: 0.6rem 0.75rem;
+    padding: 0.45rem 0.75rem;
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid var(--border-subtle);
     border-top: none;
@@ -116,49 +124,21 @@
     gap: 0.5rem;
   }
 
-  .cv-zoom-group {
-    display: flex;
-    align-items: center;
-    gap: 0.35rem;
-  }
-
-  .cv-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 40px;
-    min-height: 40px;
-    /* touch target */
-    padding: 0 0.5rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border-subtle);
-    border-radius: 4px;
-    color: var(--text-dim);
-    font-size: 1.1rem;
-    cursor: pointer;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
-    touch-action: manipulation;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-  }
-
-  .cv-btn:active,
-  .cv-btn:hover {
-    background: var(--accent-red);
-    border-color: var(--accent-red);
-    color: #fff;
-  }
-
-  .cv-btn:disabled {
-    opacity: 0.3;
-    pointer-events: none;
-  }
-
   .cv-zoom-label {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: var(--text-muted);
-    min-width: 3ch;
+    min-width: 3.5ch;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cv-usage-hint {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    opacity: 0.55;
     text-align: center;
+    font-style: italic;
+    flex: 1;
   }
 
   .cv-page-counter {
@@ -166,6 +146,7 @@
     font-size: 1rem;
     color: var(--text-dim);
     white-space: nowrap;
+    text-align: right;
   }
 
   /* ── Navigation row ── */
@@ -352,27 +333,23 @@
 
   {% if panels %}
 
-  {# ── Viewport: one panel at a time ── #}
+  {# ── Viewport ── #}
   <div class="cv-viewport" id="cv-viewport" role="region" aria-label="Evidence viewer">
     {% for panel_img in panels %}
     <div class="cv-panel {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}" role="img"
       aria-label="Evidence photo {{ loop.index }} of {{ panels|length }}">
-      <img class="cv-img" id="cv-img-{{ loop.index0 }}" src="{{ panel_img }}" alt="Evidence photo {{ loop.index }}"
-        loading="{% if loop.first %}eager{% else %}lazy{% endif %}" draggable="false" />
+      <div class="cv-canvas">
+        <img class="cv-img" src="{{ panel_img }}" alt="Evidence photo {{ loop.index }}"
+          loading="{% if loop.first %}eager{% else %}lazy{% endif %}" draggable="false" />
+      </div>
     </div>
     {% endfor %}
   </div>
 
-  {# ── Toolbar: zoom + counter ── #}
+  {# ── Toolbar: zoom% + hint + page counter ── #}
   <div class="cv-toolbar">
-    <div class="cv-zoom-group">
-      <button class="cv-btn" id="cv-zoom-out" title="Zoom out" aria-label="Zoom out">−</button>
-      <span class="cv-zoom-label" id="cv-zoom-label">100%</span>
-      <button class="cv-btn" id="cv-zoom-in" title="Zoom in" aria-label="Zoom in">+</button>
-      <button class="cv-btn" id="cv-zoom-reset" title="Reset zoom" aria-label="Reset zoom"
-        style="font-size:0.75rem;min-width:44px;">Reset</button>
-    </div>
-
+    <span class="cv-zoom-label" id="cv-zoom-label">100%</span>
+    <span class="cv-usage-hint">Scroll / pinch to zoom &middot; Drag to pan &middot; Double-tap to reset</span>
     <span class="cv-page-counter" id="cv-page-counter" aria-live="polite">
       Page 1 / {{ panels|length }}
     </span>
@@ -404,7 +381,7 @@
   <div id="cv-hint-banner" style="display:none;" class="cv-hint-banner">
     <span class="cv-hint-icon">&#9632;</span>
     ALL EVIDENCE EXAMINED &mdash;
-    {% if content.chapter_number == 2 %}
+    {% if content.chapter_number == 3 %}
     Proceed to the Evidence Analysis to close this chapter.
     {% else %}
     Press <strong>SEAL FILE</strong> below to close this chapter.
@@ -418,7 +395,7 @@
   <div class="cv-submit">
     <div id="submit-result" class="mb-3"></div>
     <button id="btn-submit-completed" class="btn btn-completed  me-2" disabled
-      title="Read all pages first to seal the file." {% if content.chapter_number==2
+      title="Read all pages first to seal the file." {% if content.chapter_number==3
       %}data-puzzle-url="{{ url_for('user.puzzle', content_id=content.id) }}" {% endif %}>✔ Seal File
       (Completed)</button>
     <button id="btn-submit-incomplete" class="btn btn-incomplete">✘ Abandon File (Incomplete)</button>
@@ -442,13 +419,12 @@
     /* ── State ── */
     var panels = document.querySelectorAll(".cv-panel");
     var totalPages = panels.length;
-    var curPage = 0;           // 0-based index
-    var zoomLevel = 1.0;
-    var ZOOM_STEP = 0.25;
-    var ZOOM_MIN = 0.5;
-    var ZOOM_MAX = 3.0;
-    // true once the user has visited the last panel
+    var curPage = 0;
     var reachedLastPage = (totalPages <= 1);
+
+    /* pan+zoom state */
+    var scale = 1, panX = 0, panY = 0;
+    var SCALE_MIN = 1, SCALE_MAX = 5;
 
     /* ── Element refs ── */
     var btnPrev = document.getElementById("cv-prev");
@@ -456,66 +432,69 @@
     var counter = document.getElementById("cv-page-counter");
     var progressBar = document.getElementById("cv-progress-bar");
     var progressWrap = document.getElementById("cv-progress-wrap");
-    var btnZoomIn = document.getElementById("cv-zoom-in");
-    var btnZoomOut = document.getElementById("cv-zoom-out");
-    var btnZoomReset = document.getElementById("cv-zoom-reset");
     var zoomLabel = document.getElementById("cv-zoom-label");
+    var viewport = document.getElementById("cv-viewport");
 
-    if (!panels.length) return;   // no panels, nothing to do
+    if (!panels.length) return;
 
-    /* ── Helpers ── */
-    function currentImg() {
-      return panels[curPage] ? panels[curPage].querySelector(".cv-img") : null;
+    /* ── Canvas helper ── */
+    function currentCanvas() {
+      var p = panels[curPage];
+      return p ? p.querySelector(".cv-canvas") : null;
     }
 
-    function applyZoom(img) {
-      if (!img) return;
-      // Width-based zoom: 100% = fit viewport, 200% = twice as wide (scrollable)
-      img.style.width = Math.round(zoomLevel * 100) + "%";
-      zoomLabel.textContent = Math.round(zoomLevel * 100) + "%";
+    /* ── Apply pan+zoom transform ── */
+    function applyTransform() {
+      var c = currentCanvas();
+      if (c) c.style.transform = "translate(" + panX.toFixed(1) + "px," + panY.toFixed(1) + "px) scale(" + scale + ")";
+      if (zoomLabel) zoomLabel.textContent = Math.round(scale * 100) + "%";
+      viewport.style.cursor = (scale > 1) ? "grab" : "default";
     }
 
-    function resetZoom() {
-      zoomLevel = 1.0;
-      applyZoom(currentImg());
-      // Scroll back to top-left after reset
-      var vp = document.getElementById("cv-viewport");
-      if (vp) { vp.scrollLeft = 0; vp.scrollTop = 0; }
+    /* ── Clamp pan inside viewport ── */
+    function clampPan() {
+      if (scale <= 1) { panX = 0; panY = 0; return; }
+      var vw = viewport.offsetWidth;
+      var vh = viewport.offsetHeight;
+      var c = currentCanvas();
+      var canvasH = c ? c.offsetHeight : vh;
+      panX = Math.min(0, Math.max(vw - vw * scale, panX));
+      panY = Math.min(0, Math.max(vh - canvasH * scale, panY));
     }
 
-    /* ── Navigate ── */
+    /* ── Zoom at viewport-relative point (cx, cy) ── */
+    function zoomAt(cx, cy, factor) {
+      var newScale = Math.min(SCALE_MAX, Math.max(SCALE_MIN, scale * factor));
+      var f = newScale / scale;
+      panX = cx - (cx - panX) * f;
+      panY = cy - (cy - panY) * f;
+      scale = newScale;
+      clampPan();
+      applyTransform();
+    }
+
+    /* ── Reset to fit ── */
+    function resetView() {
+      scale = 1; panX = 0; panY = 0;
+      applyTransform();
+    }
+
+    /* ── Navigate pages ── */
     function goTo(idx) {
       if (idx < 0 || idx >= totalPages) return;
-
-      // Reset zoom when flipping page
-      zoomLevel = 1.0;
-      if (zoomLabel) zoomLabel.textContent = "100%";
-
-      // Hide current panel and reset its zoom width
+      resetView();
       panels[curPage].classList.remove("active");
-      var oldImg = panels[curPage].querySelector(".cv-img");
-      if (oldImg) oldImg.style.width = "100%";
-
       curPage = idx;
-
-      // Show new
       panels[curPage].classList.add("active");
 
-      // Update counter
       counter.textContent = "Page " + (curPage + 1) + " / " + totalPages;
-
-      // Update progress bar
       var pct = ((curPage + 1) / totalPages) * 100;
       progressBar.style.width = pct + "%";
-      if (progressWrap) {
-        progressWrap.setAttribute("aria-valuenow", curPage + 1);
-      }
+      if (progressWrap) progressWrap.setAttribute("aria-valuenow", curPage + 1);
 
-      // Update button states
       btnPrev.disabled = (curPage === 0);
       btnNext.disabled = (curPage === totalPages - 1);
 
-      // Unlock "Seal File" only after the last panel has been seen
       if (curPage === totalPages - 1) reachedLastPage = true;
       var btnSeal = document.getElementById("btn-submit-completed");
       if (btnSeal) {
@@ -523,64 +502,161 @@
         btnSeal.title = reachedLastPage ? "" : "Read all pages first to seal the file.";
       }
 
-      // Show the hint banner and pulse the button on first unlocking
       if (curPage === totalPages - 1) {
         var hintBanner = document.getElementById("cv-hint-banner");
-        if (hintBanner && hintBanner.style.display === "none") {
-          hintBanner.style.display = "block";
-        }
+        if (hintBanner && hintBanner.style.display === "none") hintBanner.style.display = "block";
         if (btnSeal && !btnSeal.classList.contains("seal-ready")) {
           btnSeal.classList.add("seal-ready");
-          // Remove animation class after it finishes so it doesn't replay on re-visit
           setTimeout(function () { btnSeal.classList.remove("seal-ready"); }, 3700);
         }
       }
 
-      // Reset internal scroll position, then bring nav buttons into view
-      var viewport = document.getElementById("cv-viewport");
-      if (viewport) {
-        viewport.scrollLeft = 0;
-        viewport.scrollTop = 0;
-      }
+      applyTransform();
     }
 
-    /* ── Button listeners ── */
-    if (btnPrev) btnPrev.addEventListener("click", function () { goTo(curPage - 1); });
-    if (btnNext) btnNext.addEventListener("click", function () { goTo(curPage + 1); });
+    /* ════════════════════════════════════════
+       WHEEL — zoom at cursor
+    ════════════════════════════════════════ */
+    viewport.addEventListener("wheel", function (e) {
+      e.preventDefault();
+      var rect = viewport.getBoundingClientRect();
+      var factor = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      zoomAt(e.clientX - rect.left, e.clientY - rect.top, factor);
+    }, { passive: false });
 
-    if (btnZoomIn) btnZoomIn.addEventListener("click", function () {
-      zoomLevel = Math.min(ZOOM_MAX, +(zoomLevel + ZOOM_STEP).toFixed(2));
-      applyZoom(currentImg());
+    /* ════════════════════════════════════════
+       MOUSE DRAG — pan while zoomed
+    ════════════════════════════════════════ */
+    var drag = null;
+    viewport.addEventListener("mousedown", function (e) {
+      if (e.button !== 0) return;
+      drag = { x: e.clientX, y: e.clientY, px: panX, py: panY };
+      viewport.style.cursor = "grabbing";
+      e.preventDefault();
     });
-    if (btnZoomOut) btnZoomOut.addEventListener("click", function () {
-      zoomLevel = Math.max(ZOOM_MIN, +(zoomLevel - ZOOM_STEP).toFixed(2));
-      applyZoom(currentImg());
+    document.addEventListener("mousemove", function (e) {
+      if (!drag) return;
+      panX = drag.px + e.clientX - drag.x;
+      panY = drag.py + e.clientY - drag.y;
+      clampPan();
+      applyTransform();
     });
-    if (btnZoomReset) btnZoomReset.addEventListener("click", resetZoom);
+    document.addEventListener("mouseup", function () {
+      if (!drag) return;
+      drag = null;
+      viewport.style.cursor = scale > 1 ? "grab" : "default";
+    });
 
-    /* ── Keyboard navigation ── */
+    /* ════════════════════════════════════════
+       DOUBLE-CLICK — zoom in or reset
+    ════════════════════════════════════════ */
+    viewport.addEventListener("dblclick", function (e) {
+      var rect = viewport.getBoundingClientRect();
+      if (scale > 1.05) {
+        resetView();
+      } else {
+        zoomAt(e.clientX - rect.left, e.clientY - rect.top, 2.5);
+      }
+    });
+
+    /* ════════════════════════════════════════
+       TOUCH — pinch to zoom + drag to pan
+    ════════════════════════════════════════ */
+    var touch = null;
+
+    function touchDist(t) {
+      var dx = t[0].clientX - t[1].clientX, dy = t[0].clientY - t[1].clientY;
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+    function touchMid(t, rect) {
+      return {
+        x: (t[0].clientX + t[1].clientX) / 2 - rect.left,
+        y: (t[0].clientY + t[1].clientY) / 2 - rect.top
+      };
+    }
+
+    viewport.addEventListener("touchstart", function (e) {
+      e.preventDefault();
+      var rect = viewport.getBoundingClientRect();
+      if (e.touches.length === 1) {
+        touch = { type: "pan", x: e.touches[0].clientX, y: e.touches[0].clientY, px: panX, py: panY };
+      } else if (e.touches.length === 2) {
+        touch = {
+          type: "pinch",
+          dist: touchDist(e.touches),
+          mid: touchMid(e.touches, rect),
+          s0: scale, px0: panX, py0: panY
+        };
+      }
+    }, { passive: false });
+
+    viewport.addEventListener("touchmove", function (e) {
+      e.preventDefault();
+      if (!touch) return;
+      var rect = viewport.getBoundingClientRect();
+      if (e.touches.length === 2 && touch.type === "pinch") {
+        var d = touchDist(e.touches);
+        var mid = touchMid(e.touches, rect);
+        var factor = d / touch.dist;
+        var newScale = Math.min(SCALE_MAX, Math.max(SCALE_MIN, touch.s0 * factor));
+        var f = newScale / touch.s0;
+        scale = newScale;
+        panX = touch.mid.x - (touch.mid.x - touch.px0) * f;
+        panY = touch.mid.y - (touch.mid.y - touch.py0) * f;
+        clampPan();
+        applyTransform();
+      } else if (e.touches.length === 1 && touch.type === "pan" && scale > 1) {
+        panX = touch.px + e.touches[0].clientX - touch.x;
+        panY = touch.py + e.touches[0].clientY - touch.y;
+        clampPan();
+        applyTransform();
+      }
+    }, { passive: false });
+
+    viewport.addEventListener("touchend", function (e) {
+      if (e.touches.length === 0) touch = null;
+    }, { passive: true });
+
+    /* ════════════════════════════════════════
+       DOUBLE-TAP — zoom in or reset
+    ════════════════════════════════════════ */
+    var lastTap = { t: 0, x: 0, y: 0 };
+    viewport.addEventListener("touchend", function (e) {
+      if (e.changedTouches.length !== 1) return;
+      var now = Date.now();
+      var rect = viewport.getBoundingClientRect();
+      var cx = e.changedTouches[0].clientX - rect.left;
+      var cy = e.changedTouches[0].clientY - rect.top;
+      if (now - lastTap.t < 300 && Math.abs(cx - lastTap.x) < 35 && Math.abs(cy - lastTap.y) < 35) {
+        scale > 1.05 ? resetView() : zoomAt(cx, cy, 2.5);
+        lastTap.t = 0;
+      } else {
+        lastTap = { t: now, x: cx, y: cy };
+      }
+    }, { passive: true });
+
+    /* ════════════════════════════════════════
+       KEYBOARD
+    ════════════════════════════════════════ */
     document.addEventListener("keydown", function (e) {
       if (e.key === "ArrowRight" || e.key === "ArrowDown") goTo(curPage + 1);
       if (e.key === "ArrowLeft" || e.key === "ArrowUp") goTo(curPage - 1);
-      if (e.key === "+" || e.key === "=") {
-        zoomLevel = Math.min(ZOOM_MAX, +(zoomLevel + ZOOM_STEP).toFixed(2));
-        applyZoom(currentImg());
-      }
-      if (e.key === "-") {
-        zoomLevel = Math.max(ZOOM_MIN, +(zoomLevel - ZOOM_STEP).toFixed(2));
-        applyZoom(currentImg());
-      }
-      if (e.key === "0") resetZoom();
+      if (e.key === "0" || e.key === "Escape") resetView();
+      var midX = viewport.offsetWidth / 2;
+      var midY = viewport.offsetHeight / 2;
+      if (e.key === "+" || e.key === "=") zoomAt(midX, midY, 1.25);
+      if (e.key === "-") zoomAt(midX, midY, 0.8);
     });
 
-    /* ── Note: swipe-to-navigate removed. With overflow:auto + pan-x pan-y,     ──
-       browser native scrolling handles panning within a zoomed image correctly.  ──
-       Use the Prev / Next buttons or keyboard arrows to change panels.           ── */
+    /* ── Nav buttons ── */
+    if (btnPrev) btnPrev.addEventListener("click", function () { goTo(curPage - 1); });
+    if (btnNext) btnNext.addEventListener("click", function () { goTo(curPage + 1); });
 
-    /* ── Initial state ── */
+    /* ── Init ── */
     goTo(0);
 
   })();
+
 </script>
 
 <script>
