@@ -250,8 +250,17 @@
   @media (max-width: 540px) {
     .pz-col {
       width: 42%;
-      padding: 12px 6px;
-      gap: 8px;
+      padding: 10px 4px;
+      gap: 6px;
+    }
+
+    .pz-board {
+      min-height: 480px;
+    }
+
+    .pz-img {
+      width: clamp(70px, 20vw, 120px);
+      height: clamp(70px, 20vw, 120px);
     }
 
     .pz-reveal-card {
@@ -516,6 +525,18 @@
       tempLine.setAttribute("x1", lc.x); tempLine.setAttribute("y1", lc.y);
       tempLine.setAttribute("x2", x2); tempLine.setAttribute("y2", y2);
     }
+  }, { passive: true });
+
+  /* ── Touch: tap on right image via touchend (handles finger-up detection) ── */
+  colRight.addEventListener("touchend", function (e) {
+    if (!selectedLeft) return;
+    var touch = e.changedTouches[0];
+    // Hide temp line first so elementFromPoint doesn't hit the SVG
+    if (tempLine) tempLine.setAttribute("visibility", "hidden");
+    var el = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (tempLine) tempLine.setAttribute("visibility", "visible");
+    var img = el ? el.closest(".pz-img.pz-right") : null;
+    if (img) img.click();
   }, { passive: true });
 
   /* ── Completion ── */
