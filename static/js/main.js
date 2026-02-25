@@ -73,10 +73,13 @@ window.ChallengeHost = (function () {
       btnCompleted.addEventListener("click", () => {
         const puzzleUrl = btnCompleted.getAttribute("data-puzzle-url");
         const quizUrl = btnCompleted.getAttribute("data-quiz-url");
+        const callgameUrl = btnCompleted.getAttribute("data-callgame-url");
         if (puzzleUrl) {
           window.location.href = puzzleUrl;
         } else if (quizUrl) {
           window.location.href = quizUrl;
+        } else if (callgameUrl) {
+          window.location.href = callgameUrl;
         } else {
           submit(true);
         }

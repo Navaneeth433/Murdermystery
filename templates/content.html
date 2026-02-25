@@ -440,6 +440,8 @@
     Proceed to the Evidence Analysis to close this chapter.
     {% elif content.chapter_number == 4 %}
     Answer the interrogation questions to close this chapter.
+    {% elif content.chapter_number == 5 %}
+    Cross-reference the call records to close this chapter.
     {% else %}
     Press <strong>SEAL FILE</strong> below to close this chapter.
     {% endif %}
@@ -454,7 +456,9 @@
     <button id="btn-submit-completed" class="btn btn-completed  me-2" disabled
       title="Read all pages first to seal the file." {% if content.chapter_number==3
       %}data-puzzle-url="{{ url_for('user.puzzle', content_id=content.id) }}" {% endif %} {% if
-      content.chapter_number==4 %}data-quiz-url="{{ url_for('user.quiz', content_id=content.id) }}" {% endif %}>✔ Seal
+      content.chapter_number==4 %}data-quiz-url="{{ url_for('user.quiz', content_id=content.id) }}" {% endif %} {% if
+      content.chapter_number==5 %}data-callgame-url="{{ url_for('user.callgame', content_id=content.id) }}" {% endif
+      %}>✔ Seal
       File
       (Completed)</button>
     <button id="btn-submit-incomplete" class="btn btn-incomplete">✘ Abandon File (Incomplete)</button>

@@ -343,6 +343,33 @@ def puzzle(content_id):
     return render_template("puzzle.html", content=content)
 
 
+@user_bp.route("/callgame/<int:content_id>")
+def callgame(content_id):
+    """Call-history comparison game — shown at the end of chapter 5."""
+    if "user_id" not in session:
+        return redirect(url_for("user.register"))
+
+    user_id = session["user_id"]
+    content = Content.query.get_or_404(content_id)
+
+    if not can_access_content(user_id, content_id):
+        return "Locked", 403
+
+    existing = Attempt.query.filter_by(
+        user_id=user_id, content_id=content_id
+    ).first()
+    if not existing:
+        attempt = Attempt(
+            user_id=user_id,
+            content_id=content_id,
+            start_time=datetime.utcnow(),
+        )
+        db.session.add(attempt)
+        db.session.commit()
+
+    return render_template("callgame.html", content=content)
+
+
 
 @user_bp.route("/quiz/<int:content_id>")
 def quiz(content_id):
