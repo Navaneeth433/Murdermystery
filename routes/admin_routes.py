@@ -118,7 +118,6 @@ def create_content():
     if request.method == "POST":
 
         title = request.form.get("title", "").strip()
-        time_limit = request.form.get("time_limit", "").strip()
         chapter_number = request.form.get("chapter_number", "1").strip()
         raw_panels = request.form.get("panels_json", "").strip()
 
@@ -127,12 +126,7 @@ def create_content():
         if not title:
             error = "Title required."
 
-        try:
-            time_limit_int = int(time_limit)
-            if time_limit_int <= 0:
-                raise ValueError()
-        except ValueError:
-            error = "Time limit must be positive."
+        time_limit_int = 0  # Time limit removed — not used for scoring
 
         try:
             chapter_number_int = int(chapter_number)

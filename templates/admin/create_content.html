@@ -15,11 +15,6 @@
         <input type="text" class="form-control" id="title" name="title" required value="{{ title or '' }}" />
       </div>
       <div class="mb-3">
-        <label for="time_limit" class="form-label">Time Limit (seconds)</label>
-        <input type="number" min="1" class="form-control" id="time_limit" name="time_limit" required
-          value="{{ time_limit or '' }}" />
-      </div>
-      <div class="mb-3">
         <label for="chapter_number" class="form-label">Chapter number (1–8)</label>
         <input type="number" min="1" max="8" class="form-control" id="chapter_number" name="chapter_number"
           value="{{ chapter_number or '1' }}" />

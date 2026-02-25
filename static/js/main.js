@@ -32,21 +32,11 @@ window.ChallengeHost = (function () {
     });
   }
 
-  function formatSeconds(secs) {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  }
-
   function attachContentHandlers() {
     const container = document.getElementById("content-container");
     if (!container) return;
 
     const contentId = container.getAttribute("data-content-id");
-    const timeLimit = parseInt(container.getAttribute("data-time-limit") || "0", 10);
-    const timerValue = document.getElementById("timer-value");
-    let remaining = timeLimit || 0;
-
     const submitDiv = document.getElementById("submit-result");
 
     function submit(completed) {
@@ -64,9 +54,7 @@ window.ChallengeHost = (function () {
             return;
           }
           submitDiv.innerHTML = `<div class="alert alert-success">
-              Score: <strong>${data.score.toFixed(2)}</strong><br />
-              Time taken (server): <strong>${data.time_taken}s</strong><br />
-              Completed: <strong>${data.completed ? "Yes" : "No"}</strong>
+              ${completed ? "✔ File sealed. Chapter complete!" : "✘ File abandoned."}
             </div>`;
           if (data.revealed) {
             setTimeout(function () {
@@ -94,6 +82,7 @@ window.ChallengeHost = (function () {
     attachContentHandlers,
   };
 })();
+
 
 
 
