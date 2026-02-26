@@ -132,12 +132,15 @@ window.ChallengeHost = (function () {
         const puzzleUrl = btnCompleted.getAttribute("data-puzzle-url");
         const quizUrl = btnCompleted.getAttribute("data-quiz-url");
         const callgameUrl = btnCompleted.getAttribute("data-callgame-url");
+        const codegateUrl = btnCompleted.getAttribute("data-codegate-url");
         if (puzzleUrl) {
           window.location.href = puzzleUrl;
         } else if (quizUrl) {
           window.location.href = quizUrl;
         } else if (callgameUrl) {
           window.location.href = callgameUrl;
+        } else if (codegateUrl) {
+          window.location.href = codegateUrl;
         } else {
           submit(true);
         }

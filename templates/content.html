@@ -457,8 +457,9 @@
       title="Read all pages first to seal the file." {% if content.chapter_number==3
       %}data-puzzle-url="{{ url_for('user.puzzle', content_id=content.id) }}" {% endif %} {% if
       content.chapter_number==4 %}data-quiz-url="{{ url_for('user.quiz', content_id=content.id) }}" {% endif %} {% if
-      content.chapter_number==5 %}data-callgame-url="{{ url_for('user.callgame', content_id=content.id) }}" {% endif
-      %}>✔ Seal
+      content.chapter_number==5 %}data-callgame-url="{{ url_for('user.callgame', content_id=content.id) }}" {% endif %}
+      {% if content.chapter_number==7 %}data-codegate-url="{{ url_for('user.codegate', content_id=content.id) }}" {%
+      endif %}>✔ Seal
       File
       (Completed)</button>
     <button id="btn-submit-incomplete" class="btn btn-incomplete">✘ Abandon File (Incomplete)</button>

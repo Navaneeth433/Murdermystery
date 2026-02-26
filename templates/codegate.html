@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Code Access — Chapter {{ content.chapter_number }}{% endblock %}
+
+{% block head_extra %}
+<style>
+  .cg-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.6rem;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .cg-icon {
+    font-size: 2.8rem;
+    opacity: 0.25;
+    user-select: none;
+  }
+
+  .cg-heading {
+    font-family: var(--font-display);
+    font-size: clamp(1.1rem, 4vw, 1.7rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #fff;
+    text-shadow: 0 0 16px rgba(180, 0, 0, 0.5);
+    text-align: center;
+    margin: 0;
+  }
+
+  .cg-hint-box {
+    max-width: 500px;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(180, 0, 0, 0.2);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    text-align: center;
+  }
+
+  .cg-hint-label {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #555;
+    margin-bottom: 0.35rem;
+  }
+
+  .cg-hint-text {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin: 0;
+  }
+
+  .cg-input-wrap {
+    max-width: 460px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .cg-input-label {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent-red);
+    text-align: center;
+  }
+
+  .cg-row {
+    display: flex;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .cg-input {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(180, 0, 0, 0.3);
+    border-radius: 4px;
+    padding: 0.7rem 1rem;
+    color: #e0e0e0;
+    font-size: 1rem;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -webkit-appearance: none;
+  }
+
+  .cg-input:focus {
+    border-color: var(--accent-red);
+    box-shadow: 0 0 10px rgba(180, 0, 0, 0.3);
+  }
+
+  .cg-input.error {
+    border-color: #e53935;
+  }
+
+  .cg-input.ok {
+    border-color: #2e7d32;
+  }
+
+  .cg-btn {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #fff;
+    background: transparent;
+    border: 1px solid var(--border-blood);
+    border-radius: 4px;
+    padding: 0.7rem 1.4rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.25s, box-shadow 0.25s;
+  }
+
+  .cg-btn:hover {
+    background: var(--accent-red);
+    box-shadow: 0 0 14px var(--glow-red);
+  }
+
+  .cg-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .cg-error {
+    display: none;
+    font-size: 0.8rem;
+    color: #e57373;
+    font-style: italic;
+    text-align: center;
+  }
+
+  .cg-attempts {
+    font-size: 0.72rem;
+    color: #444;
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+
+  /* Reveal */
+  .cg-reveal {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+    animation: cg-appear 0.9s ease forwards;
+  }
+
+  @keyframes cg-appear {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .cg-reveal-msg {
+    font-family: var(--font-display);
+    font-size: 0.82rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #666;
+    text-align: center;
+  }
+
+  .cg-proceed-btn {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fff;
+    background: transparent;
+    border: 1px solid var(--border-blood);
+    border-radius: 4px;
+    padding: 0.75rem 2.5rem;
+    cursor: pointer;
+    transition: background 0.25s, box-shadow 0.25s;
+  }
+
+  .cg-proceed-btn:hover {
+    background: var(--accent-red);
+    box-shadow: 0 0 20px var(--glow-red);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cg-page">
+
+  <div class="cg-icon">&#9760;</div>
+
+  <h1 class="cg-heading">Classified — Access Restricted</h1>
+
+  <div class="cg-hint-box">
+    <p class="cg-hint-label">Investigator's Hint</p>
+    <p class="cg-hint-text">Inspect the crime scene and decrypt the zodiac cipher.</p>
+  </div>
+
+  <div class="cg-input-wrap">
+    <p class="cg-input-label">Enter the access code to proceed:</p>
+    <div class="cg-row">
+      <input class="cg-input" id="cg-input" type="text" autocomplete="off" autocorrect="off" spellcheck="false"
+        placeholder="ACCESS CODE" maxlength="40" />
+      <button class="cg-btn" id="cg-submit">Unlock</button>
+    </div>
+    <p class="cg-error" id="cg-error">
+      ✘ &nbsp; Incorrect code. Review the evidence and try again.
+    </p>
+    <p class="cg-attempts" id="cg-attempts"></p>
+  </div>
+
+  <div class="cg-reveal" id="cg-reveal">
+    <p class="cg-reveal-msg">✔ &nbsp; Code verified. Classified file unlocked.</p>
+    <button class="cg-proceed-btn" id="btn-proceed">→ SEAL THE FILE</button>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    "use strict";
+
+    var CONTENT_ID = {{ content.id | int
+  }};
+  var CODE = "MYEYESONYOUALLTIMES";
+  var MAX_TRIES = 5;
+  var tries = 0;
+
+  var inputEl = document.getElementById("cg-input");
+  var submitBtn = document.getElementById("cg-submit");
+  var errorEl = document.getElementById("cg-error");
+  var attemptsEl = document.getElementById("cg-attempts");
+  var revealEl = document.getElementById("cg-reveal");
+
+  function updateAttempts() {
+    if (tries > 0) {
+      attemptsEl.textContent = "Attempts: " + tries + " / " + MAX_TRIES;
+    }
+  }
+
+  inputEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") submitBtn.click();
+  });
+
+  submitBtn.addEventListener("click", function () {
+    if (tries >= MAX_TRIES) return;
+
+    var val = inputEl.value.trim().toUpperCase().replace(/\s+/g, "");
+
+    tries++;
+    updateAttempts();
+
+    if (val !== CODE) {
+      inputEl.classList.add("error");
+      inputEl.classList.remove("ok");
+      errorEl.style.display = "block";
+      if (tries >= MAX_TRIES) {
+        submitBtn.disabled = true;
+        attemptsEl.textContent = "Maximum attempts reached. Refresh to try again.";
+        attemptsEl.style.color = "#e57373";
+      }
+      return;
+    }
+
+    /* Correct */
+    inputEl.classList.remove("error");
+    inputEl.classList.add("ok");
+    errorEl.style.display = "none";
+    submitBtn.disabled = true;
+
+    fetch("/submit/" + CONTENT_ID, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: true })
+    })
+      .then(function (r) { return r.json(); })
+      .catch(function () { return {}; })
+      .finally(function () {
+        revealEl.style.display = "flex";
+      });
+  });
+
+  document.getElementById("btn-proceed").addEventListener("click", function () {
+    window.location.href = "/chapters";
+  });
+}) ();
+</script>
+{% endblock %}
