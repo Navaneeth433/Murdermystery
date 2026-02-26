@@ -479,19 +479,18 @@ def submit_result(content_id):
     attempt.time_taken = time_taken
     attempt.completed  = completed
 
-    # ── Scoring: flat base + placement bonus ─────────────────────────────────
-    # Everyone who completes a chapter gets +100 base points.
-    # On top of that, a placement bonus is awarded:
-    #   1st solver  → +500 bonus
-    #   2nd solver  → +300 bonus
-    #   3rd solver  → +150 bonus
-    #   4th–28th    → +100 bonus
-    #   29th+       →  +50 bonus
-    chapter_points = 100 if completed else 0   # flat base for all
+    # ── Scoring ───────────────────────────────────────────────────────────────
+    # ALL chapters: flat +100 base for completing (reading or game).
+    # GAME chapters only (puzzle / quiz / callgame / codegate):
+    #   also award a placement bonus based on who solved it first:
+    #     1st → +500 | 2nd → +300 | 3rd → +150 | 4th-28th → +100 | 29th+ → +50
+    GAME_CHAPTERS = {3, 4, 5, 7}   # chapters with an interactive puzzle/game
+
+    chapter_points = 100 if completed else 0   # flat base for everyone
     bonus_points   = 0
 
-    if completed:
-        # Count how many OTHER users already completed this specific chapter
+    if completed and content.chapter_number in GAME_CHAPTERS:
+        # Count how many OTHER users already completed this chapter
         prior_completions = (
             Attempt.query
             .filter(
