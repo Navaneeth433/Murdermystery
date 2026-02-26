@@ -44,15 +44,11 @@
           Enter
         </button>
         {% elif is_placeholder %}
-        <p class="chapter-lock-msg">
-          {% if c.chapter_number <= 1 %} Not yet available {% else %} Complete Chapter {{ c.chapter_number - 1 }} to
-            unlock {% endif %} </p>
-            {% else %}
-            {# Real chapter in DB but user hasn't completed the previous one #}
-            <p class="chapter-lock-msg">
-              Complete Chapter {{ c.chapter_number - 1 }} to unlock
-            </p>
-            {% endif %}
+        <p class="chapter-lock-msg">Files will be released soon.</p>
+        {% else %}
+        {# Real chapter in DB but user hasn't completed the previous one #}
+        <p class="chapter-lock-msg">Files will be released soon.</p>
+        {% endif %}
 
       </div>
 
