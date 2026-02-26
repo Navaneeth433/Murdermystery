@@ -275,7 +275,9 @@ def content_page(content_id):
     # If the chapter has exactly one "panel" that is a video URL, switch to
     # video-player mode instead of the image carousel.
     VIDEO_EXTS   = (".mp4", ".webm", ".ogg", ".mov")
-    VIDEO_HOSTS  = ("youtube.com/watch", "youtu.be/", "vimeo.com/", "cloudinary.com")
+    VIDEO_HOSTS  = ("youtube.com/watch", "youtu.be/", "vimeo.com/")
+    # Note: CDN/cloud hosts (cloudinary, S3, etc.) are NOT listed here –
+    # those can serve images too. Extension check handles direct video files.
 
     is_video   = False
     video_url  = None
