@@ -80,6 +80,20 @@
     -webkit-user-select: none;
   }
 
+  /* On mobile the viewport must NOT clip vertically —
+     let the image show at its natural height */
+  @media (max-width: 768px) {
+    .cv-viewport {
+      overflow: visible;
+      border-radius: 6px;
+    }
+
+    .cv-panel {
+      border-radius: 6px;
+      overflow: hidden;
+    }
+  }
+
   .cv-panel {
     display: none;
     width: 100%;
@@ -221,10 +235,8 @@
 
   /* ── Mobile tweaks ── */
   @media (max-width: 600px) {
-    .cv-viewport {
-      max-height: 55vh;
-    }
 
+    /* No max-height: let the full comic panel image be visible */
     .cv-nav-btn {
       padding: 0.6rem 1rem;
     }
@@ -244,13 +256,6 @@
       min-width: 36px;
       min-height: 36px;
       font-size: 1rem;
-    }
-  }
-
-  /* Landscape phones */
-  @media (max-height: 500px) and (orientation: landscape) {
-    .cv-viewport {
-      max-height: 50vh;
     }
   }
 
