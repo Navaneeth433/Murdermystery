@@ -87,15 +87,15 @@ window.ChallengeHost = (function () {
 
           /* Build success message */
           var bonusLabel = "";
-          if (chPts === 500) bonusLabel = " · 🥇 First to solve!";
-          else if (chPts === 300) bonusLabel = " · 🥈 Second to solve!";
-          else if (chPts === 150) bonusLabel = " · 🥉 Third to solve!";
-          else if (chPts === 100) bonusLabel = " · Top 28 solver!";
-          else if (chPts === 50) bonusLabel = " · Chapter complete!";
+          if (bonusPts === 500) bonusLabel = " · 🥇 First to solve! <em>(+500 bonus)</em>";
+          else if (bonusPts === 300) bonusLabel = " · 🥈 Second to solve! <em>(+300 bonus)</em>";
+          else if (bonusPts === 150) bonusLabel = " · 🥉 Third to solve! <em>(+150 bonus)</em>";
+          else if (bonusPts === 100) bonusLabel = " · <em>+100 placement bonus</em>";
+          else if (bonusPts === 50) bonusLabel = " · <em>+50 placement bonus</em>";
 
           submitDiv.innerHTML = completed
             ? `<div class="alert alert-success">
-                ✔ File sealed. Chapter complete! &nbsp;<strong>+${chPts} pts</strong>${bonusLabel}
+                ✔ File sealed. Chapter complete! &nbsp;<strong>+${chPts} pts</strong> (base)${bonusLabel}
                </div>`
             : `<div class="alert alert-danger">✘ File abandoned.</div>`;
 
