@@ -78,31 +78,34 @@ def index():
                     is_placeholder=True,
                 ))
 
-    leaderboard_rows = (
-        db.session.query(
-            User.id,
-            User.name,
-            User.email,
-            db.func.coalesce(
-                db.func.sum(Attempt.score), 0
-            ).label("total_score"),
+    # Only admins see the leaderboard
+    if session.get("is_admin"):
+        leaderboard_rows = (
+            db.session.query(
+                User.id,
+                User.name,
+                User.email,
+                db.func.coalesce(
+                    db.func.sum(Attempt.score), 0
+                ).label("total_score"),
+            )
+            .outerjoin(Attempt)
+            .group_by(User.id, User.name, User.email)
+            .order_by(db.desc("total_score"))
+            .limit(100)
+            .all()
         )
-        .outerjoin(Attempt)
-        .group_by(User.id, User.name, User.email)
-        .order_by(db.desc("total_score"))
-        .limit(100)
-        .all()
-    )
-
-    leaderboard = [
-        {
-            "user_id": r[0],
-            "name": r[1],
-            "email": r[2],
-            "total_score": float(r[3] or 0),
-        }
-        for r in leaderboard_rows
-    ]
+        leaderboard = [
+            {
+                "user_id": r[0],
+                "name": r[1],
+                "email": r[2],
+                "total_score": float(r[3] or 0),
+            }
+            for r in leaderboard_rows
+        ]
+    else:
+        leaderboard = []
 
     return render_template(
         "index.html",
