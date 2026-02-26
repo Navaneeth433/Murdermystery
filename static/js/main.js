@@ -87,9 +87,11 @@ window.ChallengeHost = (function () {
 
           /* Build success message */
           var bonusLabel = "";
-          if (bonusPts === 500) bonusLabel = " · 🥇 First to solve! <em>(+500 bonus)</em>";
-          else if (bonusPts === 200) bonusLabel = " · 🥈 Second to solve! <em>(+200 bonus)</em>";
-          else if (bonusPts === 100) bonusLabel = " · <em>+100 completion bonus</em>";
+          if (chPts === 500) bonusLabel = " · 🥇 First to solve!";
+          else if (chPts === 300) bonusLabel = " · 🥈 Second to solve!";
+          else if (chPts === 150) bonusLabel = " · 🥉 Third to solve!";
+          else if (chPts === 100) bonusLabel = " · Top 28 solver!";
+          else if (chPts === 50) bonusLabel = " · Chapter complete!";
 
           submitDiv.innerHTML = completed
             ? `<div class="alert alert-success">

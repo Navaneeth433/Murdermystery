@@ -479,34 +479,37 @@ def submit_result(content_id):
     attempt.time_taken = time_taken
     attempt.completed  = completed
 
-    # ── Chapter points: +100 for completion ──────────────────────────────────
-    chapter_points = 100 if completed else 0
+    # ── Placement-based scoring (applies to every chapter) ───────────────────
+    # 1st solver  → 500 pts
+    # 2nd solver  → 300 pts
+    # 3rd solver  → 150 pts
+    # 4th–28th    → 100 pts  (positions 3 to 27 inclusive, i.e. prior_completions 3..27)
+    # 29th+       →  50 pts
+    chapter_points = 0
+    bonus_points   = 0
 
-    # ── Game completion bonus (only when completing the highest chapter) ──────
-    bonus_points = 0
     if completed:
-        # Determine the last chapter in the DB
-        max_chapter = db.session.query(
-            db.func.max(Content.chapter_number)
-        ).scalar() or 0
-
-        if content.chapter_number == max_chapter:
-            # Count how many OTHER users have already completed this chapter
-            prior_completions = (
-                Attempt.query
-                .filter(
-                    Attempt.content_id == content_id,
-                    Attempt.completed == True,     # noqa: E712
-                    Attempt.user_id != user_id,
-                )
-                .count()
+        # Count how many OTHER users already completed this specific chapter
+        prior_completions = (
+            Attempt.query
+            .filter(
+                Attempt.content_id == content_id,
+                Attempt.completed == True,   # noqa: E712
+                Attempt.user_id != user_id,
             )
-            if prior_completions == 0:
-                bonus_points = 500   # 1st to solve
-            elif prior_completions == 1:
-                bonus_points = 200   # 2nd to solve
-            else:
-                bonus_points = 100   # 3rd+
+            .count()
+        )
+
+        if prior_completions == 0:
+            chapter_points = 500    # 1st to solve
+        elif prior_completions == 1:
+            chapter_points = 300    # 2nd to solve
+        elif prior_completions == 2:
+            chapter_points = 150    # 3rd to solve
+        elif prior_completions <= 27:
+            chapter_points = 100    # 4th – 28th (next 25 people)
+        else:
+            chapter_points = 50     # 29th and beyond
 
     attempt.score = chapter_points + bonus_points
     db.session.commit()
