@@ -112,6 +112,7 @@ def index():
         contents=contents,
         leaderboard=leaderboard,
         chapters_revealed=chapters_revealed,
+        is_admin=bool(session.get("is_admin")),
     )
 
 
