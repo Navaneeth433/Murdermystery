@@ -1,4 +1,31 @@
 window.ChallengeHost = (function () {
+
+  /* ── Floating +N score animation ────────────────────────────────────────── */
+  function showScoreFloat(points, label, delay) {
+    delay = delay || 0;
+    setTimeout(function () {
+      var el = document.createElement("div");
+      el.className = "score-float";
+      el.textContent = "+" + points + (label ? " " + label : "");
+      // Centre-ish of viewport
+      el.style.left = "50%";
+      el.style.top = "60%";
+      el.style.transform = "translateX(-50%)";
+      document.body.appendChild(el);
+      el.addEventListener("animationend", function () { el.remove(); });
+    }, delay);
+  }
+
+  /* ── Update nav score badges in-place ───────────────────────────────────── */
+  function bumpNavScore(addedPoints) {
+    ["nav-score-desktop", "nav-score-mobile"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      var current = parseInt(el.textContent.replace(/\D/g, ""), 10) || 0;
+      el.textContent = "\u2605 " + (current + addedPoints);
+    });
+  }
+
   function attachIndexHandlers() {
     const buttons = document.querySelectorAll(".btn-start-challenge");
     buttons.forEach((btn) => {
@@ -53,13 +80,44 @@ window.ChallengeHost = (function () {
             submitDiv.innerHTML = `<div class="alert alert-danger">${data.error || "Submit failed."}</div>`;
             return;
           }
-          submitDiv.innerHTML = `<div class="alert alert-success">
-              ${completed ? "✔ File sealed. Chapter complete!" : "✘ File abandoned."}
-            </div>`;
+
+          var chPts = data.chapter_points || data.score || 0;
+          var bonusPts = data.bonus_points || 0;
+          var totalPts = data.total_points || (chPts + bonusPts);
+
+          /* Build success message */
+          var bonusLabel = "";
+          if (bonusPts === 500) bonusLabel = " · 🥇 First to solve! <em>(+500 bonus)</em>";
+          else if (bonusPts === 200) bonusLabel = " · 🥈 Second to solve! <em>(+200 bonus)</em>";
+          else if (bonusPts === 100) bonusLabel = " · <em>+100 completion bonus</em>";
+
+          submitDiv.innerHTML = completed
+            ? `<div class="alert alert-success">
+                ✔ File sealed. Chapter complete! &nbsp;<strong>+${chPts} pts</strong>${bonusLabel}
+               </div>`
+            : `<div class="alert alert-danger">✘ File abandoned.</div>`;
+
+          /* Floating animations */
+          if (completed && chPts > 0) {
+            showScoreFloat(chPts, "pts", 0);
+          }
+          if (bonusPts > 0) {
+            showScoreFloat(bonusPts, "bonus!", 700);
+          }
+
+          /* Update nav badge live */
+          if (completed && totalPts > 0) {
+            bumpNavScore(totalPts);
+          }
+
           if (data.revealed) {
             setTimeout(function () {
               window.location.href = "/chapters?revealed=1";
-            }, 1500);
+            }, 1800);
+          } else if (completed) {
+            setTimeout(function () {
+              window.location.href = "/chapters";
+            }, 2200);
           }
         })
         .catch(() => {
@@ -95,7 +153,3 @@ window.ChallengeHost = (function () {
     attachContentHandlers,
   };
 })();
-
-
-
-

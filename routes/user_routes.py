@@ -426,7 +426,6 @@ def submit_result(content_id):
 
     content = Content.query.get_or_404(content_id)
 
-    # ✅ Access validation added
     if not can_access_content(user_id, content_id):
         return jsonify({"ok": False, "error": "Locked"}), 403
 
@@ -445,31 +444,50 @@ def submit_result(content_id):
     completed = bool(data.get("completed"))
 
     end_time = datetime.utcnow()
+    time_taken = int((end_time - attempt.start_time).total_seconds())
 
-    time_taken = int(
-        (end_time - attempt.start_time).total_seconds()
-    )
-
-    attempt.end_time = end_time
+    attempt.end_time  = end_time
     attempt.time_taken = time_taken
-    attempt.completed = completed
-    attempt.score = calculate_score(
-        time_taken,
-        content.time_limit,
-        completed,
-    )
+    attempt.completed  = completed
 
+    # ── Chapter points: +100 for completion ──────────────────────────────────
+    chapter_points = 100 if completed else 0
+
+    # ── Game completion bonus (only when completing the highest chapter) ──────
+    bonus_points = 0
+    if completed:
+        # Determine the last chapter in the DB
+        max_chapter = db.session.query(
+            db.func.max(Content.chapter_number)
+        ).scalar() or 0
+
+        if content.chapter_number == max_chapter:
+            # Count how many OTHER users have already completed this chapter
+            prior_completions = (
+                Attempt.query
+                .filter(
+                    Attempt.content_id == content_id,
+                    Attempt.completed == True,     # noqa: E712
+                    Attempt.user_id != user_id,
+                )
+                .count()
+            )
+            if prior_completions == 0:
+                bonus_points = 500   # 1st to solve
+            elif prior_completions == 1:
+                bonus_points = 200   # 2nd to solve
+            else:
+                bonus_points = 100   # 3rd+
+
+    attempt.score = chapter_points + bonus_points
     db.session.commit()
 
-    revealed = (
-        completed
-        and content.chapter_number == 6
-    )
+    revealed = (completed and content.chapter_number == 6)
 
-    return jsonify(
-        {
-            "ok": True,
-            "score": attempt.score,
-            "revealed": revealed,
-        }
-    )
+    return jsonify({
+        "ok": True,
+        "chapter_points": chapter_points,
+        "bonus_points":   bonus_points,
+        "total_points":   chapter_points + bonus_points,
+        "revealed":       revealed,
+    })

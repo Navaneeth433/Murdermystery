@@ -22,6 +22,23 @@ def create_app() -> Flask:
     with app.app_context():
         db.create_all()
 
+    # ── Inject current user's total score into every template ──────────────
+    @app.context_processor
+    def inject_user_score():
+        from flask import session as _session
+        from models import Attempt as _Attempt, db as _db
+        user_id = _session.get("user_id")
+        if user_id:
+            total = (
+                _db.session.query(
+                    _db.func.coalesce(_db.func.sum(_Attempt.score), 0)
+                )
+                .filter(_Attempt.user_id == user_id)
+                .scalar()
+            )
+            return {"user_total_score": int(total or 0)}
+        return {"user_total_score": None}
+
     # ✅ Register blueprints ONLY
     app.register_blueprint(user_bp)
     app.register_blueprint(admin_bp)
